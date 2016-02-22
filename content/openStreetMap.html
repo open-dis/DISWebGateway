@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Open Layers 3.x DIS Example</title>
+
+    <!-- The scripts loaded here from the cloud could also be loaded from the local web server -->
+    
+    <!-- jquery is used for retrieving and querying for HTML elements in a page -->
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    
+    <!-- bootstrap is a javascript framework for doing UI stuff. -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    
+    <!-- Open layers is retrieved from the cloud here. It can also be loaded locally. -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.7.0/ol.css" type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.7.0/ol.js"></script>
+
+    <!-- Binary DIS implementation, also coordinate system conversion utilities -->
+    <script type="text/javascript" src="javascript/dis.js"></script>
+        
+</head>
+<body>
+    
+    <h3>Open Street Map/Open Layers 3 implementation of binary DIS to the web browser</h3>
+<div class="container-fluid">
+
+<div class="row-fluid">
+  <div class="span12">
+    <div id="map" class="map"></div>
+  </div>
+</div>
+
+</div>
+<script>
+  
+  /** Where the web page goes to contact a websocket server. NOTE: this points
+   * at localhost (the host where the page is loaded) by default. This means
+   * you have to have a websocket server running on localhost, which is fine
+   * for development. In a production environment it's more likely that you
+   * want to point this at a shared server, such as "ws://track.nps.edu" or
+   * "ws://172.20.82.112"
+   * 
+   * @type String
+   */
+  var WEBSOCKET_URL="ws://localhost:8282";
+  
+  /** The TCP-like websocket we use for communications */
+  var websocket;
+  
+  /** The localEspdu represents an entity at the current location of
+   * the browser.
+   * 
+   * @type dis.EntityStatePdu
+   */
+  var espdu = new dis.EntityStatePdu();
+  
+  // A location. Open layers uses (longitude, latitude) for most things,
+  // while Google Maps likes to use (latitude, longitude).
+  // The projection handles conversions from spherical coordinates to 
+  // flat map coordinates.
+  var montereyLonLat = [-121.89, 36.6];
+  var montereyWebMercarator = ol.proj.fromLonLat(montereyLonLat);
+  var browserPosition;
+  
+  /** Hash table Used to keep track of all entities in the world */
+  var allEntities = {};
+  
+  /** Used to convert DIS earth-centered coordinates to lat/lon/alt */
+  var conversion = new dis.CoordinateConversion();
+  
+  
+  networkSetup(WEBSOCKET_URL); // Set up the network, etc.
+  getLocation();               // Get the location (lat/lon) of the browser this is running on
+  initializeLocalEspdu();      // Initialize the PDU that represents this browser
+  
+  // Use the geolocation API to find the current location periodically.
+  // Firefox keeps asking every time this is called, and you can't
+  // get in fast enough to choose the "always allow" function. 
+  window.setInterval(getLocation, 5000);
+  
+  // Every few seconds send an update espdu to the server informing it of our position
+  window.setInterval(heartbeat, 3000);
+  
+  // Every few seconds look at the list of entities, and see if there are any we
+  // have not heard from in some amount of time. If the period of silence exceeds
+  // the threshold, remove it.
+  window.setInterval(prune, 20000);
+  
+  
+  // Largely swiped from http://jsfiddle.net/6RS2z/356/
+  // 
+  // First of all, we create a the underlying data for a "layer".
+  // Multiple layers of data may be used in a map; for example one
+  // layer for roads and imagery, another layer for icons, as here.
+  // We have one layer for map images and another layer for the icons
+  // placed on the map.
+  
+  // Empty vector, used in the icon layer
+  var vectorSource = new ol.source.Vector({ });
+  
+  // Monterey icon
+  var iconFeature = new ol.Feature({
+          geometry: new  
+            ol.geom.Point(ol.proj.transform(montereyLonLat, 'EPSG:4326',   'EPSG:3857')),
+        name: 'Monterey Icon',
+        eid:JSON.stringify(espdu.entityID),
+        lastHeardFrom:new Date()
+        });
+        
+        // add it to the vectorSource that will be used in the icon layer
+        vectorSource.addFeature(iconFeature);
+    
+    // Create a style, which will be used on all the icons in the layer.
+    // Point it at 
+    var iconStyle = new ol.style.Style({
+      image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+        anchor: [0.5, 46],
+        anchorXUnits: 'fraction',
+        anchorYUnits: 'pixels',
+        opacity: 0.75,
+        //src: 'http://openlayers.org/en/v3.9.0/examples/data/icon.png'
+        src:'images/mechInf.png'
+      }))
+    });
+    
+     //add the feature vector to the layer vector, and apply a style to whole layer
+    var vectorLayer = new ol.layer.Vector({
+      source: vectorSource,
+      style: iconStyle,
+    });
+  
+    // Map with open street map layer, and a control.   
+  var map = new ol.Map( // new map, initialized with named values object.
+        {
+            // The layers array here specifies the open street map tile server.
+            // We could specify other sources, such as Bing maps, or specify
+            // other layers (such as data overlay layers) in addition. Note
+            // that we have two layers specified here, one for the map and one
+            // for the icons that will be displayed on the map.
+            layers: [
+              new ol.layer.Tile({
+                source: new ol.source.OSM()
+              }), vectorLayer
+            ],
+            
+            // Controls--zoom in, zoom out.
+            controls: ol.control.defaults({
+              attributionOptions: ({
+                collapsible: false
+              })
+            }),
+            
+            // target specifies the div id in the HTML this will be attached to.
+            // In this case, "<div id="map" class="map"></div>" in the html above.
+            target: 'map',
+            
+            // The view, which specifies the map projection, the opening zoom
+            // factor, and where the map is centered, in lon/lat. The coordinates
+            // for the center depend on the projection picked. EPSG is spherical
+            // mercarator, aka web mercarator, used in OSM and Google Maps and Bing. 
+            // Note we specify the center in an object that matches the projection.
+            view: new ol.View({
+                    center: montereyWebMercarator,
+                    zoom: 10,
+                    projection:'EPSG:3857'
+           })
+       });
+       
+   
+    function networkSetup()
+    {
+        
+        // Compatiability checks--not all web browsers support Websockets.
+        // Support is nearly universal these days, but there may be some
+        // mook out there using IE7.
+        
+        if(window.WebSocket)
+            websocket = new WebSocket(WEBSOCKET_URL);
+        else if(Window.MozWebSocket)
+            websocket = new MozWebSocket(WEBSOCKET_URL);
+        else
+            alert("This web browser does not support web sockets");
+        
+        // Set the format we want to use to receive binary messages
+        websocket.binaryType = 'arraybuffer';
+
+        // Attach functions to the the web socket for various events
+        websocket.onopen = function(evt){console.log("Opened websocket");};//console.log("websocket onopen");};
+        websocket.onclose = function(evt){console.log("websocket close", evt);};
+        websocket.onerror = function(evt){console.log("websocket error", evt.data);};
+        
+        /** Handle the messages sent from the server to us here. We receive binary
+        * DIS from the server over the web socket.
+        * @param {event} evt The receive event object. Contains the binary data to decode
+        */
+       websocket.onmessage = function(evt)
+       {               
+
+           // Do something here to limit the incoming packets
+          // Factory object for creating new PDUs from binary data
+          var pduFactory = new dis.PduFactory();
+
+          // InputStream is modeled on a Java input stream. Pass it binary data,
+          // and we will read through it, while input stream maintains a current
+          // place marker
+          //console.log(evt.data);
+          //var inputStream = new dis.InputStream(evt.data);
+
+          var disMessage = pduFactory.createPdu(evt.data);
+
+          // You can trap the various types of PDU here, and
+          // probably call a specific function to handle each
+          // type of message. For now we return on everything but
+          // espdus. Those fall through to the code below.
+          switch(disMessage.pduType)
+          {
+              case 1: //console.log("ESPDU");
+                  break;
+
+              // We don't actually do any logic with these yet, just return
+              case 2: //console.log("FirePdu", disMessage);
+                  return;
+              default:
+                  return;  
+          }
+
+          // Convert from DIS global coordinates to latitude/longtitude
+          var latLonAlt = conversion.convertDisToLatLongInDegrees(disMessage.entityLocation);
+          var networkLonLat = [latLonAlt.longitude, latLonAlt.latitude];
+          
+          // Retrieve the entity ID from the DIS message, convert it to a JSON
+          // string, and then use that as a  key into a lookup
+          var entityID = disMessage.entityID;
+          var eidString = JSON.stringify(entityID);
+
+          // Look up the feature in the vector layer that corresponds to this entity ID
+          var theFeature = findFeature(eidString, vectorSource.getFeatures() );
+          
+          // If it doesn't exist, create a new feature to represent it
+          if(theFeature === null)
+          {
+              console.log("adding new entity to database with eid ", eidString);
+              
+               var theFeature = new ol.Feature({
+                    geometry: new  
+                      ol.geom.Point(ol.proj.transform(networkLonLat, 'EPSG:4326',   'EPSG:3857')),
+                  eid:eidString,
+                  name:"from network",
+                  lastHeardFrom: new Date()
+                  });
+                  
+               vectorSource.addFeature(theFeature);
+         }
+         
+         // Update its position to reflect the network message
+         var point = new ol.geom.Point(ol.proj.transform(networkLonLat, 'EPSG:4326',   'EPSG:3857'));
+         theFeature.setGeometry(point);
+         
+         // This triggers a redraw on the map for the vector layer only
+         vectorSource.changed();
+
+      }; // End of onMessage()
+           
+           
+    } // end of initializeMessage
+  
+  /**
+   * Searches the featurs of the vectorSource layer for the given ID, returning
+   * either the feature object, if found, or null, if not.
+   * 
+   * @param {String} eidString the JSON-ified eid string for the object to be found
+   * @param {array} features, the array of features in the vector source layer
+   * @returns {Feature} The feature, or null if not found
+   */
+    function findFeature(eidString, features)
+    {
+        var arrayLength = features.length;
+        for(idx = 0; idx < arrayLength; idx++)
+        {
+            var props = features[idx].getProperties();
+            if(props.eid === eidString)
+            {
+                return features[idx];
+                break;
+            }
+        }
+        
+        return null;
+    }
+    
+    /** Standard browser geolocation code to get the location of the device
+    * that this web page is running on. This runs async, and will cal the 
+    * showPosition() function when it actually finds the position. The
+    * user will be prompted to see if they allow this.
+    */
+   function getLocation()
+   {
+       //console.log("geolocation called");
+       if (navigator.geolocation)
+       {
+         // Works via callback to function passed in
+         navigator.geolocation.getCurrentPosition(showPosition);
+         //console.log("callback registered");
+       }
+       else
+       {
+           console.log("Geolocation not supported by this browser");
+       }
+   }
+
+   /** Callback function. Gets the location as the browser knows it. */
+   function showPosition(position, error)
+   {
+       // Note that we are using the W3C definition of position here, not
+       // the google maps. 
+       browserPosition = position;
+       //console.log("Browser geolocation fired; Latitude:", position.coords.latitude , "Longitude: " + position.coords.longitude); 
+   }
+   
+   function initializeLocalEspdu()
+   {
+        espdu.marking.setMarking("Browser");
+       // Entity ID
+        espdu.entityID.site = 42;
+        espdu.entityID.application = 17;
+        espdu.entityID.entity = Math.round(Math.random() * 16000); // Unique (ish) ID
+
+        // What type of entity this is--in this case a dismounted infantry guy
+        espdu.entityType.entityKind = 3;   // life form
+        espdu.entityType.domain = 1;       // land
+        espdu.entityType.country = 225;    // US
+        espdu.entityType.cat = 1;          // dismounted infantry
+        espdu.entityType.subcategory = 17; // Mini-14! A-Team roolz!
+        espdu.entityType.specific = 1;     // number of people
+
+        espdu.timestamp = 1;               // Timestamp is bogus--should fix this. Just needs to be incremented at a miminim
+   }
+   
+   /**
+    * Called periodicaly to send out an update of our position. Uses the
+    * browser geolocation routines to set the PDUs location, which is useful
+    * for mobile devices. If we have no local position fix, do not send out
+    * an update.
+    */
+   function heartbeat()
+   {      
+     
+       
+       // We don't have a current position; sending an update is sort of pointless
+       if( browserPosition === undefined)
+           return;
+
+       // browserPosition contains the w3c definition of a position, not 
+       // the google maps definition. Convert to the appropriate property
+       // names to pass into the coordinate conversion object.
+
+       // The coordinate conversion object uses properties named lat/lon/alt
+       // and returns an object with properties x, y, and z.
+       var conversion = new dis.CoordinateConversion();
+       latLonAlt = {};
+       latLonAlt.lat = browserPosition.coords.latitude;
+       latLonAlt.lon = browserPosition.coords.longitude;
+       latLonAlt.alt = 0.0;
+
+       // bump timestamp
+       espdu.timestamp++;
+
+       // Set location. We get an object with properties x, y, and z back
+       // from conversion.
+       var disCoordinates = conversion.getXYZfromLatLonAltDegrees(latLonAlt);
+       espdu.entityLocation.x = disCoordinates.x;
+       espdu.entityLocation.y = disCoordinates.y;
+       espdu.entityLocation.z = disCoordinates.z;
+
+       espdu.marking.setMarking("Browser");
+
+       // Marshal out the PDU that represents the local browser's position
+       // to the IEEE DIS binary format. We allocate a big buffer to write,
+       // and if the actual data occupies less than that, trim to fit.
+
+       var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
+       var outputStream = new dis.OutputStream(dataBuffer);
+       espdu.encodeToBinaryDIS(outputStream);
+
+       // Trim to fit
+       var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
+       websocket.send(trimmedData);
+
+       // update our marker position
+       var features = vectorSource.getFeatures()
+       var eidString = JSON.stringify(espdu.entityID);
+       var montereyFeature = findFeature(eidString, features);
+       
+       var newPosition = [browserPosition.coords.longitude, browserPosition.coords.latitude];
+       var point = new ol.geom.Point(ol.proj.transform(newPosition, 'EPSG:4326',   'EPSG:3857'));
+       montereyFeature.setGeometry(point);
+       
+       // You MUST use the setProperties function rather than trying to set it
+       // directly with dot notation.
+       montereyFeature.setProperties({lastHeardFrom: new Date()});
+        
+       // This triggers a redraw on the map for the vector layer only
+       vectorSource.changed();
+
+   } 
+   
+   /** 
+    * Removes icons from the map if  we haven't heard from in some amount of time
+    */
+   function prune()
+   {       
+       var TIMEOUT = 120000; // 2 min
+       var now = new Date();
+
+       var allFeatures = vectorSource.getFeatures();
+       var arrayLength = allFeatures.length;
+              
+       // traverse in reverse order (deleting while traversing)
+       for(idx = arrayLength; idx > 0; idx--)
+        {
+            var thisFeature = allFeatures[idx-1];
+            var props = thisFeature.getProperties();
+            
+            if(props.lastHeardFrom.getTime() + TIMEOUT < now.getTime())
+            {
+                console.log("Pruned feature ", props);
+                vectorSource.removeFeature(thisFeature);
+            }
+        }       
+   }
+
+
+</script>
+</body>
+</html>

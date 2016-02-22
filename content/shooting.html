@@ -1,0 +1,287 @@
+
+<html>
+    <head>
+        <title>Shooting at Stuff</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <script type="text/javascript" src="javascript/dis.js"></script>
+    </head>
+    <body onLoad="initialize()">
+        
+        <h2>Shooting Test</h2><br>
+        <form id="FireForm" action="form_action.asp">
+                <b>Fire PDU Information</b><br>
+                  Firing Entity ID: <input type="text" name="siteID" id="siteID" value="17">,
+                                    <input type="text" name="applicationID" id="applicationID" value="42">,
+                                    <input type="text" name="entityID" id="entityID" value="1"><br>
+                  Target Entity ID: <input type="text" name="tSiteID" id="tSiteID" value="17">,
+                                    <input type="text" name="tApplicationID" id="tApplicationID" value="42">,
+                                    <input type="text" name="tEntityID" id="tEntityID" value="88"><br>
+                  Munition Type : <select id="ammo"> 
+                      <option value="40mmGrenade">40mm Grenade</option>
+                      <option value="556Rifle">5.56 Rifle</option>
+                  </select><br>
+                  Shooter Location (Lat/Lon/Alt):<input type="text" name="sLat" id="sLat" value="36.7">,
+                                    <input type="text" name="sLon" id="sLon" value="-121.3">,
+                                    <input type="text" name="sAlt" id="sAlt" value="1"><br>
+                      <br>
+                 <br>
+                 <input type="button" name="fireMunition" value="Fire" onClick="fire()" >
+                 <br>
+        </form>
+        
+        <p>
+            
+       <form id="DetonationForm" action="form_action.asp">
+          <b>Detonation PDU Information</b><br>
+                  Firing Entity ID: <input type="text" name="siteID" id="dfSiteID" value="17">,
+                                    <input type="text" name="applicationID" id="dfApplicationID" value="42">,
+                                    <input type="text" name="entityID" id="dfEntityID" value="1"><br>
+                                    
+                  Target Entity ID: <input type="text" name="tSiteID" id="dtSiteID" value="88">,
+                                    <input type="text" name="tApplicationID" id="dtApplicationID" value="18">,
+                                    <input type="text" name="tEntityID" id="dtEntityID" value="1"><br>
+                  
+                  Detonation Location (Lat/Lon/Alt):<input type="text" name="dLat" id="dLat" value="31.4426">,
+                                    <input type="text" name="sLon" id="dLon" value="45.2273,">,
+                                    <input type="text" name="sAlt" id="dAlt" value="1034.5"><br>
+                      <br>
+                      
+                 <br>
+                 <input type="button" name="det" value="Detonation" onClick="detonation()" >
+                 <br>
+        </form>
+        
+        <SCRIPT type="text/javascript">
+    /** This works if you're running client and server on one host. To 
+     * have it work with a remote server, replace localhost with the IP
+     * or name of the server.
+     */
+    var WEBSOCKET_URL="ws://localhost:8282";
+    var websocket;
+    /** A likely map location */
+    var montereyLocation = {'latitude':36.595, 'longitude':-121.877};
+    var allEntities = new Object();
+    var pduFactory = new dis.PduFactory();
+    var eventIdentifier = 1;
+    var eventIndex = 1;
+                     
+   function fire()
+   {
+       console.log("bang");
+       var firePdu = new dis.FirePdu();
+       firePdu.firingEntityID.site = parseInt(document.getElementById("siteID").value);
+       firePdu.firingEntityID.application = parseInt(document.getElementById("applicationID").value);
+       firePdu.firingEntityID.entity = parseInt(document.getElementById("entityID").value);
+       
+       firePdu.targetEntityID.site = parseInt(document.getElementById("tSiteID").value);
+       firePdu.targetEntityID.application = parseInt(document.getElementById("tApplicationID").value);
+       firePdu.targetEntityID.entity = parseInt(document.getElementById("tEntityID").value);
+       
+       // Ammo type being shot
+       var ammoSelect = document.getElementById("ammo");
+       var ammo = ammoSelect.options[ammoSelect.selectedIndex].value;
+       console.log("Ammo type: ", ammo);
+       switch(ammo)
+       {
+           case "40mmGrenade":
+               console.log("40mm grenade");
+               var burst = firePdu.burstDescriptor;
+               var munition = burst.munition;
+               //US 40mm HEDP grenade
+               munition.kind = 2;
+               munition.domain = 9;
+               munition.country = 225; // US
+               munition.category = 1;
+               munition.subcategory = 4;
+               munition.spec = 2;
+               break;
+               
+            case "556Rifle":
+                console.log("Rifle");
+                var burst = firePdu.burstDescriptor;
+                var munition = burst.munition;
+                // 5.56 ball ammo
+                munition.kind = 2;
+                munition.domain = 8;
+                munition.country = 225; // US
+                munition.category = 2;
+                munition.subcategory = 1;
+                munition.spec = 5;
+                break;
+                
+            default:
+                break;
+       }
+       
+       eventIndex++;
+       firePdu.eventID.eventNumber = eventIndex;
+       
+       // Position of shooter
+        var lat = parseFloat(document.getElementById("sLat").value);
+        var lon = parseFloat(document.getElementById("sLon").value);
+        var alt = parseFloat(document.getElementById("sAlt").value);
+                
+       // Convert lat/lon/alt to DIS coordinates
+        var conversion = new dis.CoordinateConversion();
+        latLonAlt = {};
+        latLonAlt.lat = lat;
+        latLonAlt.lon = lon;
+        latLonAlt.alt = alt;
+
+        var disCoordinates = conversion.getXYZfromLatLonAltDegrees(latLonAlt);
+        firePdu.locationInWorldCoordinates.x = disCoordinates.x;
+        firePdu.locationInWorldCoordinates.y = disCoordinates.y;
+        firePdu.locationInWorldCoordinates.z = disCoordinates.z;
+        
+        // Send Fire PDU
+        var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
+        var outputStream = new dis.OutputStream(dataBuffer);
+        firePdu.encodeToBinaryDIS(outputStream);
+
+        // Trim to fit
+        var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
+        websocket.send(trimmedData);
+        console.log("Send firePDU:", firePdu);
+   }
+   
+   function detonation()
+   {
+       console.log("kablooie");
+       var detonationPdu = new dis.DetonationPdu();
+       detonationPdu.firingEntityID.site = parseInt(document.getElementById("dfSiteID").value);
+       detonationPdu.firingEntityID.application = parseInt(document.getElementById("dfApplicationID").value);
+       detonationPdu.firingEntityID.entity = parseInt(document.getElementById("dfEntityID").value);
+       
+       detonationPdu.targetEntityID.site = parseInt(document.getElementById("dtSiteID").value);
+       detonationPdu.targetEntityID.application = parseInt(document.getElementById("dtApplicationID").value);
+       detonationPdu.targetEntityID.entity = parseInt(document.getElementById("dtEntityID").value);
+       
+       // Ammo type being shot
+       var ammoSelect = document.getElementById("ammo");
+       var ammo = ammoSelect.options[ammoSelect.selectedIndex].value;
+       console.log("Ammo type: ", ammo);
+       switch(ammo)
+       {
+           case "40mmGrenade":
+               console.log("artillery");
+               var burst = detonationPdu.burstDescriptor;
+               burst.warhead = 5000;
+               burst.fuse = 100;
+               burst.rate = 1;
+               burst.quantity = 1;
+                
+               var munition = burst.munition;
+               //US 40mm HEDP grenade
+               munition.kind = 2;
+               munition.domain = 9;
+               munition.country = 225; // US
+               munition.category = 1;
+               munition.subcategory = 4;
+               munition.spec = 2;
+               break;
+               
+            case "556Rifle":
+                console.log("Rifle");
+                var burst = detonationPdu.burstDescriptor;
+                burst.warhead = 5000;
+                burst.fuse = 100;
+                burst.rate = 1;
+                burst.quantity = 1;
+                
+                var munition = burst.munition;
+                //5.56 ball ammo
+                munition.kind = 2;
+                munition.domain = 8;
+                munition.country = 225; // US
+                munition.category = 2;
+                munition.subcategory = 1;
+                munition.spec = 5;
+                break;
+                
+            default:
+                break;
+       }
+       
+       
+       detonationPdu.eventID.eventNumber = eventIndex;
+       
+       // Position of shooter
+        var lat = parseFloat(document.getElementById("dLat").value);
+        var lon = parseFloat(document.getElementById("dLon").value);
+        var alt = parseFloat(document.getElementById("dAlt").value);
+                
+       // Convert lat/lon/alt to DIS coordinates
+        var conversion = new dis.CoordinateConversion();
+        latLonAlt = {};
+        latLonAlt.lat = lat;
+        latLonAlt.lon = lon;
+        latLonAlt.alt = alt;
+
+        var disCoordinates = conversion.getXYZfromLatLonAltDegrees(latLonAlt);
+        detonationPdu.locationInWorldCoordinates.x = disCoordinates.x;
+        detonationPdu.locationInWorldCoordinates.y = disCoordinates.y;
+        detonationPdu.locationInWorldCoordinates.z = disCoordinates.z;
+        
+        // Send Fire PDU
+        var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
+        var outputStream = new dis.OutputStream(dataBuffer);
+        detonationPdu.encodeToBinaryDIS(outputStream);
+
+        // Trim to fit
+        var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
+        websocket.send(trimmedData);
+        console.log("Send detonationPdu", detonationPdu);
+   }
+
+    /**
+     * Initialize websocket
+     * 
+     * @returns {undefined}
+     */
+    function initialize()
+    {
+        websocket = new WebSocket(WEBSOCKET_URL);
+
+        // Set the format we want to use to receive binary messages
+         websocket.binaryType = 'arraybuffer';
+
+         // Attach functions to the the web socket for various events
+         websocket.onopen = function(evt){console.log("Opened websocket");};//console.log("websocket onopen");};
+         websocket.onclose = function(evt){console.log("websocket close", evt);};
+         websocket.onerror = function(evt){console.log("websocket error", evt.data);};
+
+         websocket.onmessage = function(evt)
+         { 
+             //console.log("Received message");
+             var disMessage = pduFactory.createPdu(evt.data);
+
+             switch(disMessage.pduType)
+             {
+                case 1: 
+                    //console.log("ESPDU");
+                    var entityId = disMessage.entityID;
+                    var eidString = JSON.stringify(entityId);
+                    var theEntity = allEntities[eidString];
+                    if(theEntity === undefined)
+                    {
+                        allEntities[eidString] = disMessage;
+                        console.log("Entity database:")
+                        console.log("--");
+                        console.log(allEntities);
+                        console.log("--");
+                    }
+                    break;
+
+                default:
+                    break;
+             }
+         };
+
+    }
+
+            
+            
+            </script>
+    </body>
+</html>

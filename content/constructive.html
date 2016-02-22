@@ -1,0 +1,275 @@
+
+<html>
+    <head>
+        <title>Constructive Entity DIS Placement</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <script type="text/javascript" src="javascript/dis.js"></script>
+    </head>
+    <body onLoad="initialize()">
+        
+        <div>
+            <h2>Constructive Simulation DIS Entity</H2><p>
+                
+            This web page sends Entity State PDUs with the values below.
+            Fill out the form, and click "Submit." The page will send ESDPUs
+            with those values to the web server over a websocket, and the server
+            will transmit them on the local network.<p>
+            
+            The Javascript in the web page will send the ESPDUs with the frequency
+            indicated (in milliseconds). 
+        
+        </div>
+        <div id="data">
+            
+            <form id="EspduForm" action="form_action.asp">
+                <b>Entity Type Information</b><br>
+                  Kind: <input type="text" name="entitykind" id="entitykind" value="1"><br>
+                  Domain: <input type="text" name="domain" id="domain" value="3"><br>
+                  Country <input type="text" name="country" id="country" value="225"><br>
+                  Category<input type="text" name="category" id="category" value="1"><br>
+                  Subcategory<input type="text" name="subcategory" id="subcategory" value="1"><br>
+                  Specific<input type="text" name="specific" id="specific" value="1"><br>
+                  Extra<input type="text" name="extra" id="extra" value="1"><br><br>
+                  
+                  <b>Entity ID site and application</b><br>
+                  Site<input type="text" name="site" id="site" value="48"><br>
+                  Application<input type="text" name="application" id="application" value="23"><br>
+                  <br>
+                  <b>Location</b></br>
+                  Latitude (Decimal degrees):<input type="text" name="latitude" id="latitude" value="31.4426"><br>
+                  Longitude<input type="text" name="longitude" id="longitude" value="45.2273"><br>
+                  Altitude (meters)<input type="text" name="altitude" id="altitude" value="10"><br>
+                  
+                  <br>
+                  <b>Marking</b>
+                  Marking<input type="text" name="marking" id="marking" value="MyEntity"><br>
+                  <br>
+                  
+                  <br>
+                  <b>Send Frequency </b><br>
+                  Send Frequency (ms)<input type="text" name="sendfrequency" id="sendfrequency" value="5000"><br>
+                          
+            <input type="button" name="submit" value="Submit" onClick="constructiveSend(this.form)" >
+</form>
+        </div>
+        
+       
+        
+        <SCRIPT type="text/javascript">
+            /** This works if you're running client and server on one host. To 
+             * have it work with a remote server, replace localhost with the IP
+             * or name of the server.
+             */
+            var WEBSOCKET_URL="ws://localhost:8282";
+            var websocket;
+            var timerID = 0;
+            /** A likely map location */
+            var montereyLocation = {'latitude':36.595, 'longitude':-121.877};
+            var allDisEntities = new Object();
+            var pduFactory = new dis.PduFactory();
+            var espdu = new dis.EntityStatePdu();
+            
+            var rifleMunition = new dis.EntityType();
+            var damageHits = 0;
+            
+            
+            espdu.entityID.entity = Math.round(Math.random() * 64000);
+            
+            /**
+             * Called when the user clicks the "submit" button. Starts a task
+             * to retrieve the field values, and periodically send ESPDUs based
+             * on this.
+             * 
+             * @param {type} form
+             * @returns {undefined}
+             */
+            function constructiveSend(form)
+            {                
+                // On a second button press, kill the old send timer and
+                // start a new one farther down, so we don't have two
+                // timers sending
+                if(timerID != 0)
+                {
+                    console.log("timerID:", timerID)
+                    clearInterval(timerID);
+                    console.log("Killed old periodic send task")
+                }
+                
+                // Fill out entity type info
+                espdu.entityType.entityKind = parseInt(document.getElementById("entitykind").value);
+                espdu.entityType.domain = parseInt(document.getElementById("domain").value);
+                espdu.entityType.country = parseInt(document.getElementById("country").value);
+                espdu.entityType.category = parseInt(document.getElementById("category").value);
+                espdu.entityType.subcategory = parseInt(document.getElementById("subcategory").value);
+                espdu.entityType.specific = parseInt(document.getElementById("specific").value);
+                espdu.entityType.extra = parseInt(document.getElementById("extra").value);
+                
+                // Fill out entity ID 
+                espdu.entityID.site = parseInt(document.getElementById("site").value);
+                espdu.entityID.application = parseInt(document.getElementById("application").value);
+                espdu.entityID.entity = Math.round(Math.random() * 65000);
+                
+                // Marking
+                espdu.marking.setMarking(document.getElementById("marking").value);
+                
+                // Position
+                var lat = parseFloat(document.getElementById("latitude").value);
+                var lon = parseFloat(document.getElementById("longitude").value);
+                var alt = parseFloat(document.getElementById("altitude").value);
+                
+                // Convert lat/lon/alt to DIS coordinates
+                var conversion = new dis.CoordinateConversion();
+                latLonAlt = {};
+                latLonAlt.lat = lat;
+                latLonAlt.lon = lon;
+                latLonAlt.alt = alt;
+                console.log("Geodetic location:", latLonAlt);
+
+                var disCoordinates = conversion.getXYZfromLatLonAltDegrees(latLonAlt);
+                espdu.entityLocation.x = disCoordinates.x;
+                espdu.entityLocation.y = disCoordinates.y;
+                espdu.entityLocation.z = disCoordinates.z;
+                console.log("Location:", disCoordinates);
+                
+                // How often to send
+                var frequency = parseInt(document.getElementById("sendfrequency").value);
+                                          
+                // start a repeating task to send it
+                timerID = setInterval(sendPdu, frequency);
+            }
+            
+            /**
+             * Called by the timer task. Marshal and send a PDU
+             * 
+             * @returns {undefined}
+             */
+            function sendPdu()
+            {
+                var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
+                var outputStream = new dis.OutputStream(dataBuffer);
+                espdu.encodeToBinaryDIS(outputStream);
+                
+                // Trim to fit
+                var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
+                websocket.send(trimmedData);
+                //console.log("Sent pdu ", espdu);
+                
+            }
+            
+            /**
+             * Initialize websocket
+             * 
+             * @returns {undefined}
+             */
+            function initialize()
+            {
+                
+                // Initialize munition type. M855 5.56 round
+                rifleMunition.country = 225;   // usa
+                rifleMunition.domain = 8;      // anti-personnel
+                rifleMunition.entityKind = 2;  // Munition
+                rifleMunition.category = 2;    // ballistic
+                rifleMunition.subcategory = 1; // 5.56 caliber
+                rifleMunition.spec = 5;        // M855 (vs tracer, etc)
+                rifleMunition.extra = 0;
+                
+                
+                websocket = new WebSocket(WEBSOCKET_URL);
+
+                // Set the format we want to use to receive binary messages
+                 websocket.binaryType = 'arraybuffer';
+
+                 // Attach functions to the the web socket for various events
+                 websocket.onopen = function(evt){console.log("Opened websocket");};//console.log("websocket onopen");};
+                 websocket.onclose = function(evt){console.log("websocket close", evt);};
+                 websocket.onerror = function(evt){console.log("websocket error", evt.data);};
+
+                 // We don't really need to receive anything, just blindly send
+                 websocket.onmessage = function(evt)
+                 { 
+                     var disMessage = pduFactory.createPdu(evt.data);
+                     //console.log("PDU:", disMessage);
+                     switch(disMessage.pduType)
+                     {
+                        case 1: 
+                            //console.log("ESPDU");
+                            break;
+                            
+                        case 2:
+                           console.log("Fire PDU:", disMessage);
+                           break;
+
+                        case 3:
+                           console.log("Detonation PDU");
+                           assessDamageToOurEntities(disMessage);
+                           break;
+                            
+                        default:
+                            break;
+                     }
+                    
+                 }
+                
+            }
+   
+   /**
+    * Write code to assess damage to our entity here. Assume
+    * that we are killed by two or more 5.56 rifle rounds that
+    * hit us. We receive the detonation PDU, which contains the
+    * target ID and the munition. if 1) we're the target, and 
+    * 2) the munition is a rifle round, and (3) the impact
+    * is in the general area, assume we've been shot. You can 
+    * make use of the entityIDsEqual() and munitionsEqual() 
+    * functions.
+    * 
+    * @param {type} detonationPdu
+    * @returns {undefined}
+    */
+ function assessDamageToOurEntities(detonationPdu)
+ {
+     console.log("Assessing damage for detonation:", detonationPdu);
+     
+     // Information from the detonation PDU
+     var detonationMunition = detonationPdu.burstDescriptor.munition;
+     var targetEntityID = detonationPdu.targetEntityID;
+     var detonationLocation = detonationPdu.locationInWorldCoordinates;
+     
+     // Our information
+     var ourLocation = espdu.entityLocation;
+     var ourEntityID = espdu.entityID;
+     
+     // Assess damage here
+ }
+ 
+ function entityIDsEqual(eid1, eid2)
+ {
+     if(eid1.site === eid2.site &&
+        eid1.application === eid2.application &&
+        eid1.entity === eid2.entity)
+    {
+        return true;
+    }
+
+    return false;
+ }
+ 
+ 
+ function munitionsEqual(firstMunition, secondMunition)
+ {
+     if(firstMunition.domain === secondMunition.domain &&
+        firstMunition.entityKind === secondMunition.entityKind &&
+        firstMunition.country === secondMunition.country &&
+        firstMunition.category === secondMunition.category &&
+        firstMunition.subcategory === secondMunition.subcategory &&
+        firstMunition.specific === secondMunition.specific &&
+        firstMunition.extra === secondMunition.extra)
+        {
+          return true;
+        }
+
+    return false;
+ }
+            </script>
+    </body>
+</html>
