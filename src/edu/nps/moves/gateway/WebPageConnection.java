@@ -160,8 +160,13 @@ public class WebPageConnection implements DISEndpoint
         // connnection
         if(aoim != null && Configuration.ENABLE_AOIM)
         {
+            //System.out.println("Performing AOIM test");
             if( !(aoim.pduPassesAOIM(buf)))
+            {
+                //System.out.println("Failed AOIM test");
                 return;
+            }
+               //System.out.println("Passed AOIM test");
         }
         
         try
@@ -184,7 +189,7 @@ public class WebPageConnection implements DISEndpoint
     *  for the number of  messages (binary and json) sent. IntSummaryStatistics
     *  is a JDK8 class.
     * 
-    * @retrun IntSummaryStatistics summary stats for messages sent
+    * @return IntSummaryStatistics summary stats for messages sent
     */
    public IntSummaryStatistics getMessagesSentSummaryStatistics()
    {
@@ -195,7 +200,7 @@ public class WebPageConnection implements DISEndpoint
     *  for the number of binary messages (binary and json) received. 
     * IntSummaryStatistics is a JDK8 class.
     * 
-    * @retrun IntSummaryStatistics summary stats for messages sent
+    * @return IntSummaryStatistics summary stats for messages sent
     */
     public IntSummaryStatistics getMessagesReceivedSummaryStatistics()
     {

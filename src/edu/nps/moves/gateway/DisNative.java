@@ -156,6 +156,7 @@ public class DisNative implements Runnable, DISEndpoint
                     {
                         
                         EntityStatePdu espdu = (EntityStatePdu)aPdu;
+                        //System.out.println(new String(espdu.getMarking().getCharacters()));
                         //System.out.println("Got espdu for " + new String(espdu.getMarking().getCharacters()));
                         if(entities.get(espdu.getEntityID()) == null)
                         {
@@ -172,7 +173,6 @@ public class DisNative implements Runnable, DISEndpoint
                     connectionManager.enqueueBinaryMessage(trimmedData, this);
                     messagesReceived.accept(1);
 
-                    //System.out.println("Got PDU");
                     // We can also convert this to JSON if we like.
                     //JSONObject obj = new JSONObject(aPdu);
                     //System.out.println(obj.toString());

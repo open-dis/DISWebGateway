@@ -6,7 +6,9 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import javax.script.*;
-import com.sun.org.apache.xml.internal.security.utils.Base64;
+
+// Apache commons for codecs
+import org.apache.commons.codec.binary.Base64;
 
 
 /**
@@ -88,7 +90,9 @@ public class AreaOfInterest
       
       try
       {
-          String encodedData = Base64.encode(pduData);
+          // some problem finding the method.
+          /*
+          String encodedData = org.apache.commons.codec.binary.Base64.encodeBase64String(pduData);
           
          //System.out.println("invoking aoim for " + encodedData);
         Object result = invocableJavascriptFunction.invokeFunction("aoim", encodedData);
@@ -97,6 +101,7 @@ public class AreaOfInterest
         
         if(result instanceof Boolean )
             return (Boolean)result;
+                  */
       }
       catch(Exception e)
       {

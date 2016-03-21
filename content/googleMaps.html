@@ -154,7 +154,7 @@ to lat/lon/alt.
             websocket.onmessage = function(evt)
             {               
                 
-                // Do something here to limit the incoming packets
+               //console.log("Raw message: ", evt);
                // Factory object for creating new PDUs from binary data
                var pduFactory = new dis.PduFactory();
                
@@ -166,6 +166,7 @@ to lat/lon/alt.
                
                var disMessage = pduFactory.createPdu(evt.data);
                
+               //console.log(disMessage);
                // You can trap the various types of PDU here, and
                // probably call a specific function to handle each
                // type of message. For now we return on everything but
@@ -192,7 +193,7 @@ to lat/lon/alt.
                // up to an AIS feed, for example.
                
                messageCount++;
-               if(messageCount % 20000 === 0)
+               if(messageCount % 500 === 0)
                {
                   var timeNow = new Date();
                   var difference = timeNow.getTime() - startTime.getTime();
