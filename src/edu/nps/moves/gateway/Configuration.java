@@ -77,7 +77,7 @@ public class Configuration
      * of those set above. The properties file is read at startup and passed
      * here. The name is GatewayConfiguration.properties.
      * 
-     * @param settings 
+     * @param settings Properties objects with settings
      */
     public static void setConfigurationFromProperties(Properties settings)
     {

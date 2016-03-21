@@ -17,9 +17,9 @@ import java.io.*;
 public class PublishSubscribe extends BinaryJedisPubSub
 {
   /**
-    * Receive a message from a channel 
-    * @param channel
-    * @param message 
+    * Receive a message from a channel. See superclass
+    * @param channel channel
+    * @param message message
     */
    @Override
    public void onMessage(byte[] channel, byte[] message) 
@@ -58,9 +58,9 @@ public class PublishSubscribe extends BinaryJedisPubSub
   }
 
    /**
-    * 
-    * @param channel
-    * @param subscribedChannels 
+    * See superclass.
+    * @param channel channel
+    * @param subscribedChannels subscribed channels
     */
    @Override
    public void onSubscribe(byte[] channel, int subscribedChannels) 
@@ -69,9 +69,9 @@ public class PublishSubscribe extends BinaryJedisPubSub
    }
 
    /**
-    * 
-    * @param channel
-    * @param subscribedChannels 
+    * See superclass
+    * @param channel channel
+    * @param subscribedChannels subscribed channels
     */
    @Override
     public void onUnsubscribe(byte[] channel, int subscribedChannels) 
@@ -80,9 +80,9 @@ public class PublishSubscribe extends BinaryJedisPubSub
     }
 
     /**
-     * 
-     * @param pattern
-     * @param subscribedChannels 
+     * See superclass
+     * @param pattern pattern
+     * @param subscribedChannels subscribed channels
      */
     @Override
     public void onPSubscribe(byte[] pattern, int subscribedChannels) 
@@ -91,9 +91,9 @@ public class PublishSubscribe extends BinaryJedisPubSub
     }
 
     /**
-     * 
-     * @param pattern
-     * @param subscribedChannels 
+     * See superclass
+     * @param pattern pattern
+     * @param subscribedChannels subscribed channels
      */
     @Override
    public void onPUnsubscribe(byte[] pattern, int subscribedChannels) 
@@ -102,10 +102,10 @@ public class PublishSubscribe extends BinaryJedisPubSub
    }
 
    /**
-    * 
-    * @param pattern
-    * @param channel
-    * @param message 
+    * see superclass
+    * @param pattern pattern
+    * @param channel channel
+    * @param message message
     */
    @Override
    public void onPMessage(byte[] pattern, byte[] channel,

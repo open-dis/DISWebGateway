@@ -79,8 +79,8 @@ public class AreaOfInterest
    * true or false, if true the PDU should be sent to the client. If there
    * is no javascript, a null AOIM, always pass all PDUs.
    * 
-   * @param pduData
-   * @return 
+   * @param pduData PDU data, in binary form
+   * @return true of the PDU should be sent to the client
    */
   public boolean pduPassesAOIM(byte[] pduData)
   {

@@ -254,7 +254,7 @@ public class DisRedis implements DISEndpoint
     *  for the number of  messages (binary and json) sent. IntSummaryStatistics
     *  is a JDK8 class.
     * 
-    * @retrun IntSummaryStatistics summary stats for messages sent
+    * @return IntSummaryStatistics summary stats for messages sent
     */
    public IntSummaryStatistics getMessagesSentSummaryStatistics()
    {
@@ -265,7 +265,7 @@ public class DisRedis implements DISEndpoint
     *  for the number of binary messages (binary and json) received. 
     * IntSummaryStatistics is a JDK8 class.
     * 
-    * @retrun IntSummaryStatistics summary stats for messages sent
+    * @return IntSummaryStatistics summary stats for messages sent
     */
     public IntSummaryStatistics getMessagesReceivedSummaryStatistics()
     {

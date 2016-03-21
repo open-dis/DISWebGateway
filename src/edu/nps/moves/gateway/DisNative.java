@@ -62,7 +62,8 @@ public class DisNative implements Runnable, DISEndpoint
     /** 
      * Constructor
      * @param socket socket we read and write on. You should create this socket with the DisSocketFactory object
-     * @param multicastAddress If null we read & write bcast. Otherwise mcast on this address
+     * @param multicastAddress If null we read and write bcast. Otherwise mcast on this address
+     * @param port socket port
      */
     public DisNative(MulticastSocket socket, InetAddress multicastAddress, int port)
     {
@@ -190,7 +191,7 @@ public class DisNative implements Runnable, DISEndpoint
      * Sending strings to the local network is probably a bad idea. For now
      * we simply no-op this because it doesn't make sense to send a non-standard
      * string to the network.
-     * @param aMessage 
+     * @param aMessage the string format message
      */
     @Override
    public void sendToClient(String aMessage)
@@ -335,7 +336,7 @@ public class DisNative implements Runnable, DISEndpoint
     *  for the number of  messages (binary and json) sent. IntSummaryStatistics
     *  is a JDK8 class.
     * 
-    * @retrun IntSummaryStatistics summary stats for messages sent
+    * @return IntSummaryStatistics summary stats for messages sent
     */
    public IntSummaryStatistics getMessagesSentSummaryStatistics()
    {
@@ -346,7 +347,7 @@ public class DisNative implements Runnable, DISEndpoint
     *  for the number of binary messages (binary and json) received. 
     * IntSummaryStatistics is a JDK8 class.
     * 
-    * @retrun IntSummaryStatistics summary stats for messages sent
+    * @return IntSummaryStatistics summary stats for messages sent
     */
     public IntSummaryStatistics getMessagesReceivedSummaryStatistics()
     {

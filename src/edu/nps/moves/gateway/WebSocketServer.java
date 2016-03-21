@@ -54,6 +54,8 @@ public class WebSocketServer
 
     /** 
      * Entry point. Create a new Server class, initialize it, and start it.
+     * @param args None, just a sig
+     * @throws Exception catch-all
      */
     public static void main(String[] args) throws Exception 
     {

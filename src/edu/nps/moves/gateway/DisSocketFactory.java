@@ -15,8 +15,8 @@ public class DisSocketFactory
      * Create a UDP socket. If multicast group is not null, join that multicast group.
      * The so_reuse_addr socket option to set on, as is the bcast socket option.
      * 
-     * @param port
-     * @param multicastGroup
+     * @param port The socket port
+     * @param multicastGroup the multicast group. Join it if not null
      * @return A multicast socket with so_reuse_addr on, and bcast socket option on, bound to the given port
      */
     public static MulticastSocket getDisSocket(int port, String multicastGroup)

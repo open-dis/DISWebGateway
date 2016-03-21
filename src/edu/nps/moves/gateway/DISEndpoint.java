@@ -11,17 +11,21 @@ import java.util.IntSummaryStatistics;
  */
 public interface DISEndpoint 
 {
-    /** Send binary format DIS to an endpoint. */
+    /** Send binary format DIS to an endpoint. 
+     * @param buf binary format message, typcially iee1278.1 DIS
+     */
    public void sendBinaryToClient(byte[] buf);
    
-   /** Send JSON format DIS to a client */
+   /** Send JSON format DIS to a client 
+    * @param aMessage JSON format message
+    */
    public void sendToClient(String aMessage);
    
    /** Get the summary statistics object for this connection
     *  for the number of  messages (binary and json) sent. IntSummaryStatistics
     *  is a JDK8 class.
     * 
-    * @retrun IntSummaryStatistics summary stats for messages sent
+    * @return IntSummaryStatistics summary stats for messages sent
     */
    public IntSummaryStatistics getMessagesSentSummaryStatistics();
    
@@ -29,7 +33,7 @@ public interface DISEndpoint
     *  for the number of binary messages (binary and json) received. 
     * IntSummaryStatistics is a JDK8 class.
     * 
-    * @retrun IntSummaryStatistics summary stats for messages sent
+    * @return IntSummaryStatistics summary stats for messages sent
     */
     public IntSummaryStatistics getMessagesReceivedSummaryStatistics();
 

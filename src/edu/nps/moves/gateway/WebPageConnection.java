@@ -98,8 +98,8 @@ public class WebPageConnection implements DISEndpoint
     /** Fired when a client sends a binary message. 
      *
      * @param buf binary data
-     * @param offset
-     * @param length 
+     * @param offset offset into binary data (see interface)
+     * @param length length of binary data (see interface)
      */
     @OnWebSocketMessage
     public void onBinaryMessage(byte buf[], int offset, int length)
@@ -152,7 +152,7 @@ public class WebPageConnection implements DISEndpoint
      * Sends data in binary format to the client. The end client is typically
      * another web page. This is called typically from ConnectionManager.
      * 
-     * @param buf 
+     * @param buf typically a IEEE-1278.1 DIS packet
      */
     public void sendBinaryToClient(byte[] buf)
     {

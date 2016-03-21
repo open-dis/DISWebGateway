@@ -90,7 +90,7 @@ public class ConnectionManager implements Runnable
      * Add a client connection to the list. Messages will be
      * relayed to this client.
      * 
-     * @param aWebSocket 
+     * @param aConnection  connection to client
      */
     public synchronized void addConnection(DISEndpoint aConnection)
     {
@@ -102,7 +102,7 @@ public class ConnectionManager implements Runnable
      * typically called when a client closes the connection. We remove it
      * from the list of active connections.
      * 
-     * @param aConnection 
+     * @param aConnection Connection to client
      */
     public synchronized void removeConnection(DISEndpoint aConnection)
     {
@@ -155,11 +155,11 @@ public class ConnectionManager implements Runnable
     /**
      * Send a binary message we have received from the sender out to all the other
      * clients, but do NOT send it back to the client that sent it. The message
-     * is typically in IEEE DIS binary format.
+     * is typically in IEEE DIS binary format. If the sender is null, the message 
+     * is sent to all clients.
      * 
      * @param data message received from sender
      * @param sender the client that sent the message. The message is not sent to this client.
-     * If the sender is null, the message is sent to all clients.
      */
     public void repeatBinaryMessage(byte[] data, DISEndpoint sender)
     {
@@ -213,8 +213,8 @@ public class ConnectionManager implements Runnable
      * which has concurrency protection, and the run() thread retrieves
      * the message and distributes it. This is better because almost all
      * CPUs are multicore these days and it runs in true parallel fashion.
-     * @param data
-     * @param sender 
+     * @param data binary data to send
+     * @param sender connection to the client
      */
     public void enqueueBinaryMessage(byte[] data, DISEndpoint sender)
     {
