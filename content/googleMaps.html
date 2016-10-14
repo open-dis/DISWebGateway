@@ -90,32 +90,7 @@ to lat/lon/alt.
              */
             function initialize()
             {
-                // Initialize the PDU that represents this web browser page. The
-                // geolocation API is used to place this entity whereever the web
-                // browser happens to be located. For example, if the computer running
-                // this web browser page is in Orlando, the icon will drop in Orlando.
-                
-                // Entity ID
-                espdu.entityID.site = 42;
-                espdu.entityID.application = 17;
-                espdu.entityID.entity = Math.round(Math.random() * 16000); // Unique (ish) ID
-                
-                // What type of entity this is--in this case a dismounted infantry guy
-                espdu.entityType.entityKind = 3;   // life form
-                espdu.entityType.domain = 1;       // land
-                espdu.entityType.country = 225;    // US
-                espdu.entityType.cat = 1;          // dismounted infantry
-                espdu.entityType.subcategory = 17; // Mini-14! A-Team roolz!
-                espdu.entityType.specific = 1;     // number of people
-                
-                espdu.timestamp = 1;               // Timestamp is bogus--should fix this. Just needs to be incremented at a miminim
-                
-                // Use the geolocation API to find the current location
-                // Firefox keeps asking every time this is called, and you can't
-                // get in fast enough to choose the "always allow" function. 
-                window.setInterval(getLocation, 5000);
-                // Send our state periodically 
-                window.setInterval(heartbeat, 5000);
+               
                 // periodically prune entities that we haven't heard from lately
                 window.setInterval(prune, 60000);
                 
@@ -170,27 +145,13 @@ to lat/lon/alt.
                // You can trap the various types of PDU here, and
                // probably call a specific function to handle each
                // type of message. For now we return on everything but
-               // espdus. Those fall through to the code below.
-               switch(disMessage.pduType)
-               {
-                   case 1: //console.log("ESPDU");
-                       //console.log("ESPDU:", disMessage);
-                       break;
-                       
-                   // We don't actually do any logic with these yet
-                   case 2: console.log("FirePdu:", disMessage);
-                       return;
-                       
-                   case 3: console.log("DetonationPdu:", disMessage);
-                       return;
-                       
-                   default:
-                       console.log("PDU:", disMessage);
-                       return;  
-               }
+               // espdus. 
+               
+               if(disMessage.pduType != 1)
+                   return;
               
                // Some instrumentation for performance. This is useful if hooked
-               // up to an AIS feed, for example.
+               // up to an AIS feed, for example, which generates a lot of traffic.
                
                messageCount++;
                if(messageCount % 500 === 0)
@@ -209,7 +170,6 @@ to lat/lon/alt.
                var entityID = disMessage.entityID;
                var eidString = JSON.stringify(entityID);
                
-               
                // Convert from DIS global coordinates to latitude/longtitude
                var latLonAlt = conversion.convertDisToLatLongInDegrees(disMessage.entityLocation);
                
@@ -223,9 +183,10 @@ to lat/lon/alt.
                if(theMarker === undefined)
                {
                    theMarker = {};
+                   var entityMarking = disMessage.marking.getMarking();
                    
                    var contentString = "<b>Entity ID:</b>" + JSON.stringify(disMessage.entityID) + "<br>";
-                   contentString = contentString + "<b>Marking:</b>" + disMessage.marking.getMarking() + "<br>";
+                   contentString = contentString + "<b>Marking:</b>" + entityMarking + "<br>";
                    contentString = contentString + "<b>Entity Type:</b>" + JSON.stringify(disMessage.entityType) + "<br>";
                    contentString = contentString + "<b>Location:</b>" + latLonAlt.latitude + ", " +latLonAlt.longitude + ", " + latLonAlt.altitude + "<br>"
                    var infowindow = new google.maps.InfoWindow({content: contentString});
@@ -287,148 +248,6 @@ to lat/lon/alt.
                 }                
             }
             
-            /**
-             * Called periodicaly to send out an update of our position. Uses the
-             * browser geolocation routines to set the PDUs location, which is useful
-             * for mobile devices. If we have no local position fix, do not send out
-             * an update.
-             */
-            function heartbeat()
-            {            
-                //console.log("In heartbeat");
-                // We don't have a current position; sending an update is sort of pointless
-                if( browserPosition === undefined)
-                    return;
-                
-                // browserPosition contains the w3c definition of a position, not 
-                // the google maps definition. Convert to the appropriate property
-                // names to pass into the coordinate conversion object.
-                
-                // The coordinate conversion object uses properties named lat/lon/alt
-                // and returns an object with properties x, y, and z.
-                var conversion = new dis.CoordinateConversion();
-                latLonAlt = {};
-                latLonAlt.lat = browserPosition.coords.latitude;
-                latLonAlt.lon = browserPosition.coords.longitude;
-                latLonAlt.alt = 0.0;
-                
-                // bump timestamp
-                espdu.timestamp++;
-                
-                // Set location. We get an object with properties x, y, and z back
-                // from conversion.
-                var disCoordinates = conversion.getXYZfromLatLonAltDegrees(latLonAlt);
-                espdu.entityLocation.x = disCoordinates.x;
-                espdu.entityLocation.y = disCoordinates.y;
-                espdu.entityLocation.z = disCoordinates.z;
-                
-                espdu.marking.setMarking("DISMap");
-                
-                // Marshal out the PDU that represents the local browser's position
-                // to the IEEE DIS binary format. We allocate a big buffer to write,
-                // and if the actual data occupies less than that, trim to fit.
-                
-                var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
-                var outputStream = new dis.OutputStream(dataBuffer);
-                espdu.encodeToBinaryDIS(outputStream);
-                
-                // Trim to fit
-                var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
-                websocket.send(trimmedData);
-               
-                // Create or update our marker position
-                var ourLocation = new google.maps.LatLng(latLonAlt.latitude, latLonAlt.longitude);
-                if(ourMarker === undefined)
-                {
-                    ourMarker = new google.maps.Marker({
-                       map:map,
-                       draggable:true,
-                       animation:google.maps.Animation.DROP,
-                       position: ourLocation,
-                       title:espdu.marking.getMarking(),
-                       icon:"http://maps.google.com/mapfiles/ms/icons/green-dot.png"
-                   });
-                   
-                 // Set up an infowindow that will be opened when the user clicks the green (self) icon
-                 var contentString = "<b>Entity ID:</b> " + JSON.stringify(espdu.entityID) + "<br>";
-                 contentString = contentString + "<b>Marking:</b> " + espdu.marking.getMarking() + "<br>";
-                 contentString = contentString + "<b>Entity Type:</b> " + JSON.stringify(espdu.entityType) + "<br>";
-                 contentString = contentString + "<b>Location:</b>" + latLonAlt.lat + ", " + latLonAlt.lon + ", " + latLonAlt.alt + "<br>";
-                 var infowindow = new google.maps.InfoWindow({content: contentString});
-                 google.maps.event.addListener(ourMarker, 'click', function() 
-                   {
-                        infowindow.open(map,ourMarker);
-                   });
-                } // end of createing new marker
-                
-                // Update the marker position
-                ourMarker.setPosition(new google.maps.LatLng(browserPosition.coords.latitude, browserPosition.coords.longitude) );
-
-            }    
-            
-            /** Standard browser geolocation code to get the location of the device
-             * that this web page is running on
-             */
-            function getLocation()
-            {
-                //console.log("geolocation called");
-                if (navigator.geolocation)
-                {
-                  // Works via callback to function passed in
-                  navigator.geolocation.getCurrentPosition(showPosition);
-                  //console.log("callback registered");
-                }
-                else
-                {
-                    console.log("Geolocation not supported by this browser");
-                }
-            }
-            
-            /** Callback function. Gets the location as the browser knows it. */
-            function showPosition(position, error)
-            {
-                // Note that we are using the W3C definition of position here, not
-                // the google maps. 
-                browserPosition = position;
-                //console.log("Latitude:", position.coords.latitude , "Longitude: " + position.coords.longitude); 
-            }
-            
-            function createFirePdu()
-            {
-                var firePdu = new dis.FirePdu();
-                firePdu.firingEntityID = espdu.entityID;
-                // target entity ID unset, remains at (0,0,0)
-                // munitioni entity ID unset, remains at (0,0,0)
-                firePdu.entityLocation = espdu.entityLocation;
-                firePdu.eventID.site = espdu.entityID.site;
-                firePdu.eventID.application = espdu.entityID.application;
-                firePdu.eventID.eventNumber = Math.round(Math.random() * 16000); 
-                
-                firePdu.locationInWorldCoordinates.x = 3836160;
-                firePdu.locationInWorldCoordinates.y = 3866345;
-                firePdu.locationInWorldCoordinates.z = 3307921;
-                
-                var munitionType = firePdu.burstDescriptor.munition;
-                munitionType.kind = 2;
-                munitionType.domain = 2;
-                munitionType.country = 225;
-                munitionType.category = 2;
-                munitionType.subcategory = 3;
-                munitionType.spec = 2;
-                
-                firePdu.burstDescriptor.warhead = 5000;
-                firePdu.burstDescriptor.quanity = 1;
-                firePdu.burstDescriptor.rate = 1;
-                
-                return firePdu;
-            }
-            
-            function createDetonationPdu()
-            {
-                var detonationPdu = new dis.DetonationPdu();
-                
-                return detonationPdu;
-            }
             
             
             

@@ -4,7 +4,7 @@
         <title>Constructive Entity DIS Placement</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-         <script type="text/javascript" src="javascript/dis.js"></script>
+        <script type="text/javascript" src="javascript/dis.js"></script>
     </head>
     <body onLoad="initialize()">
         
@@ -37,8 +37,8 @@
                   Application<input type="text" name="application" id="application" value="23"><br>
                   <br>
                   <b>Location</b></br>
-                  Latitude (Decimal degrees):<input type="text" name="latitude" id="latitude" value="31.4426"><br>
-                  Longitude<input type="text" name="longitude" id="longitude" value="45.2273"><br>
+                  Latitude (Decimal degrees):<input type="text" name="latitude" id="latitude" value="36.595"><br>
+                  Longitude<input type="text" name="longitude" id="longitude" value="-121.9"><br>
                   Altitude (meters)<input type="text" name="altitude" id="altitude" value="10"><br>
                   
                   <br>
@@ -111,6 +111,8 @@
                 espdu.entityID.entity = Math.round(Math.random() * 65000);
                 
                 // Marking
+                var convert =  new dis.StringConversion();
+                
                 espdu.marking.setMarking(document.getElementById("marking").value);
                 
                 // Position
