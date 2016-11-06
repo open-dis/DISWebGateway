@@ -91,6 +91,23 @@ to lat/lon/alt.
             function initialize()
             {
                
+               var coordinateConversion = new dis.CoordinateConversion();
+               
+               var position = {};
+               position.lat = 50.430436041848;
+               position.lon = 45.4806844718347;
+               position.alt = 16.2087463214993;
+               
+               var xyz = coordinateConversion.getXYZfromLatLonAltDegrees(position);
+               console.log("xyz for postion is ", xyz);
+               
+               var geocentric = {};
+               geocentric.x = 2854437.74;
+               geocentric.y = 2902738.86;
+               geocentric.z = 4893439.36;
+               var geodetic = coordinateConversion.convertDisToLatLongInDegrees(geocentric);
+               console.log("geodetic for the same position: ", geodetic);
+               
                 // periodically prune entities that we haven't heard from lately
                 window.setInterval(prune, 60000);
                 

@@ -32,14 +32,14 @@ dis.CoordinateConversion = function()
         answer[0] = 0.0;
         answer[1] = 0.0;
         answer[2] = 0.0;
+        var a = 6378137.0;    //semi major axis (WGS 84)
+        var b = 6356752.3142; //semi minor axis (WGX 84)
 
-        var eSquared;      //first eccentricity squared
-        var rSubN;         //radius of the curvature of the prime vertical
-        var ePrimeSquared; //second eccentricity squared
+        var eSquared; //first eccentricity squared
+        var rSubN; //radius of the curvature of the prime vertical
+        var ePrimeSquared;//second eccentricity squared
         var W = Math.sqrt((x*x + y*y));
-        var a = 6378137.0;    // shorter variable names
-        var b = 6356752.3142;
-        
+
         eSquared = (a*a - b*b) / (a*a);
         ePrimeSquared = (a*a - b*b) / (b*b);
         
@@ -58,7 +58,6 @@ dis.CoordinateConversion = function()
         {
             answer[1] = Math.atan(y/x) - Math.PI;
         }
-        
         /**
          * Longitude calculation done. Now calculate latitude.
          * NOTE: The handbook mentions using the calculated phi (latitude) value to recalculate B
@@ -77,15 +76,15 @@ dis.CoordinateConversion = function()
          * h = (Z / sin phi ) - rSubN + (eSquared * rSubN). Our applications are never near the poles, so this formula
          * was left unimplemented.
          */
-        rSubN = (a * a) / Math.sqrt(((a * a) * (Math.cos(phi)*Math.cos(phi)) + ((b*b) * (Math.sin(phi)*Math.sin(phi)))));
+        rSubN = (a*a) / Math.sqrt(((a*a) * (Math.cos(phi)*Math.cos(phi)) + ((b*b) * (Math.sin(phi)*Math.sin(phi)))));
 
         answer[2] = (W / Math.cos(phi)) - rSubN;
     
-        var result = {latitude:answer[0] * this.RADIANS_TO_DEGREES, longitude:answer[1] * this.RADIANS_TO_DEGREES, altitude:answer[2]};
+        var result = {latitude:answer[0] * this.RADIANS_TO_DEGREES, longitude:answer[1] * this.RADIANS_TO_DEGREES, altitude:answer[2] * this.RADIANS_TO_DEGREES};
         return result;
 
     };
-   
+    
     /**
      * Converts lat long and geodetic height (elevation) into DIS XYZ
      * This algorithm also uses the WGS84 ellipsoid, though you can change the values
@@ -98,15 +97,17 @@ dis.CoordinateConversion = function()
         var latitudeRadians = latLonAlt.lat   * this.DEGREES_TO_RADIANS;
         var longtitudeRadians = latLonAlt.lon * this.DEGREES_TO_RADIANS;
         
+        //var a = 6378137.0; //semi major axis
+        //var b = 6356752.3142; //semi minor axis
         var cosLat = Math.cos(latitudeRadians);
         var sinLat = Math.sin(latitudeRadians);
 
 
-        var rSubN = (this.a * this.a) / Math.sqrt(((this.a * this.a) * (cosLat * cosLat) + ((this.b * this.b) * (sinLat*sinLat))));
+        var rSubN = (this.a*this.a) / Math.sqrt(((this.a*this.a) * (cosLat*cosLat) + ((this.b*this.b) * (sinLat*sinLat))));
 
         var X = (rSubN + latLonAlt.alt) * cosLat * Math.cos(longtitudeRadians);
         var Y = (rSubN + latLonAlt.alt) * cosLat * Math.sin(longtitudeRadians);
-        var Z = ((((this.b * this.b) / (this.a * this.a)) * rSubN) + latLonAlt.alt) * sinLat;
+        var Z = ((((this.b*this.b) / (this.a*this.a)) * rSubN) + latLonAlt.alt) * sinLat;
 
         return {x:X, y:Y, z:Z};
     };
@@ -930,38 +931,14 @@ exports.RangeCoordinates = dis.RangeCoordinates;
 exports.InputStream = dis.InputStream;
 exports.OutputStream = dis.OutputStream;
 
-/*
-  License for the Geodesy package at https://github.com/chrisveness/geodesy
-
-  The code was lightly modified to make it work in the browser instead of node.
-The MIT License (MIT)
-
-Copyright (c) 2014 Chris Veness
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*//* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 /* Geodesy representation conversion functions                        (c) Chris Veness 2002-2016  */
 /*                                                                                   MIT Licence  */
 /* www.movable-type.co.uk/scripts/latlong.html                                                    */
 /* www.movable-type.co.uk/scripts/geodesy/docs/module-dms.html                                    */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 
+'use strict';
 /* eslint no-irregular-whitespace: [2, { skipComments: true }] */
 
 
@@ -1224,6 +1201,8 @@ if (String.prototype.trim === undefined) {
     };
 }
 
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+if (typeof module != 'undefined' && module.exports) module.exports = Dms; // ≡ export default Dms
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 /* Geodesy tools for an ellipsoidal earth model                       (c) Chris Veness 2005-2016  */
 /*                                                                                   MIT Licence  */
@@ -1488,6 +1467,10 @@ if (typeof module != 'undefined' && module.exports) module.exports = LatLon, mod
 /* www.movable-type.co.uk/scripts/latlong.html                                                    */
 /* www.movable-type.co.uk/scripts/geodesy/docs/module-latlon-spherical.html                       */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+if (typeof module!='undefined' && module.exports) var Dms = require('./dms'); // ≡ import Dms from 'dms.js'
+
 
 /**
  * Library of geodesy functions for operations on a spherical earth model.
@@ -2108,12 +2091,17 @@ if (Number.prototype.toDegrees === undefined) {
 }
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+if (typeof module != 'undefined' && module.exports) module.exports = LatLon; // ≡ export default LatLon
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 /*  Vector-based spherical geodetic (latitude/longitude) functions    (c) Chris Veness 2011-2016  */
 /*                                                                                   MIT Licence  */
 /* www.movable-type.co.uk/scripts/latlong-vectors.html                                            */
 /* www.movable-type.co.uk/scripts/geodesy/docs/module-latlon-nvector-spherical.html               */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+if (typeof module!='undefined' && module.exports) var Vector3d = require('./vector3d.js'); // ≡ import Vector3d from 'vector3d.js'
+if (typeof module!='undefined' && module.exports) var Dms = require('./dms.js');           // ≡ import Dms from 'dms.js'
 
 
 /**
@@ -2669,12 +2657,19 @@ if (Math.sign === undefined) {
         return x > 0 ? 1 : -1;
     };
 }
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+if (typeof module != 'undefined' && module.exports) module.exports = LatLon, module.exports.Vector3d = Vector3d; // ≡ export { LatLon as default, Vector3d }
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 /* Vincenty Direct and Inverse Solution of Geodesics on the Ellipsoid (c) Chris Veness 2002-2016  */
 /*                                                                                   MIT Licence  */
 /* www.movable-type.co.uk/scripts/latlong-vincenty.html                                           */
 /* www.movable-type.co.uk/scripts/geodesy/docs/module-latlon-vincenty.html                        */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+if (typeof module!='undefined' && module.exports) var LatLon = require('./latlon-ellipsoidal.js'); // ≡ import LatLon from 'latlon-ellipsoidal.js'
+
 
 /**
  * Direct and inverse solutions of geodesics on the ellipsoid using Vincenty formulae.
@@ -2935,12 +2930,17 @@ if (Number.prototype.toDegrees === undefined) {
 }
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+if (typeof module != 'undefined' && module.exports) module.exports = LatLon; // ≡ export default LatLon
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 /*  MGRS / UTM Conversion Functions                                   (c) Chris Veness 2014-2016  */
 /*                                                                                   MIT Licence  */
 /* www.movable-type.co.uk/scripts/latlong-utm-mgrs.html                                           */
 /* www.movable-type.co.uk/scripts/geodesy/docs/module-mgrs.html                                   */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+if (typeof module!='undefined' && module.exports) var Utm = require('./utm.js');                   // ≡ import Utm from 'utm.js'
+if (typeof module!='undefined' && module.exports) var LatLon = require('./latlon-ellipsoidal.js'); // ≡ import LatLon from 'latlon-ellipsoidal.js'
 
 
 /**
@@ -3186,8 +3186,9 @@ Mgrs.prototype.toString = function(digits) {
 };
 
 
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+if (typeof module != 'undefined' && module.exports) module.exports = Mgrs; // ≡ export default Mgrs
 /* npm main module */
-/* Commented out for use in browser
 'use strict';
 exports.LatLonSpherical   = require('./latlon-spherical.js');
 exports.LatLonEllipsoidal = require('./latlon-ellipsoidal.js');
@@ -3200,12 +3201,15 @@ exports.Utm               = require('./utm.js');
 exports.Mgrs              = require('./mgrs.js');
 exports.OsGridRef         = require('./osgridref.js');
 exports.Dms               = require('./dms.js');
-*//* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 /* Ordnance Survey Grid Reference functions                           (c) Chris Veness 2005-2016  */
 /*                                                                                   MIT Licence  */
 /* www.movable-type.co.uk/scripts/latlong-gridref.html                                            */
 /* www.movable-type.co.uk/scripts/geodesy/docs/module-osgridref.html                              */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+if (typeof module!='undefined' && module.exports) var LatLon = require('./latlon-ellipsoidal.js'); // ≡ import LatLon from 'latlon-ellipsoidal.js'
 
 
 /**
@@ -3503,12 +3507,448 @@ if (String.prototype.trim === undefined) {
         return String(this).replace(/^\s\s*/, '').replace(/\s\s*$/, '');
     };
 }
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+if (typeof module != 'undefined' && module.exports) module.exports = OsGridRef; // ≡ export default OsGridRef
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  Geodesy Test Harness - dms                                        (c) Chris Veness 2014-2016  */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+
+var chai = require('chai');  // BDD/TDD assertion library
+
+var Dms = require('../npm.js').Dms;
+
+chai.should();
+var test = it; // just an alias
+
+describe('dms', function() {
+
+    describe('0°', function() {
+        test('parse 0.0°',           function() { Dms.parseDMS('0.0°').should.equal(0); });
+        test('output 000.0000°',     function() { Dms.toDMS(0, 'd').should.equal('000.0000°'); });
+        test('parse 0°',             function() { Dms.parseDMS('0°').should.equal(0); });
+        test('output 000°',          function() { Dms.toDMS(0, 'd', 0).should.equal('000°'); });
+        test('parse 000°00′00″',     function() { Dms.parseDMS('000°00′00″').should.equal(0); });
+        test('output 000°00′00″',    function() { Dms.toDMS(0).should.equal('000°00′00″'); });
+        test('parse 000°00′00.0″',   function() { Dms.parseDMS('000°00′00.0″').should.equal(0); });
+        test('output 000°00′00.00″', function() { Dms.toDMS(0, 'dms', 2).should.equal('000°00′00.00″'); });
+    });
+
+    describe('parse variations', function() { // including whitespace, different d/m/s symbols (ordinal, ascii/typo quotes)
+        var variations = [
+            '45.76260',
+            '45.76260 ',
+            '45.76260°',
+            '45°45.756′',
+            '45° 45.756′',
+            '45 45.756',
+            '45°45′45.36″',
+            '45º45\'45.36"',
+            '45°45’45.36”',
+            '45 45 45.36 ',
+            '45° 45′ 45.36″',
+            '45º 45\' 45.36"',
+            '45° 45’ 45.36”',
+        ];
+        for (var v in variations) test('parse dms variations '+variations[v],     function() { Dms.parseDMS(variations[v]).should.equal(45.76260); });
+        for (var v in variations) test('parse dms variations '+'-'+variations[v], function() { Dms.parseDMS('-'+variations[v]).should.equal(-45.76260); });
+        for (var v in variations) test('parse dms variations '+variations[v]+'N', function() { Dms.parseDMS(variations[v]+'N').should.equal(45.76260); });
+        for (var v in variations) test('parse dms variations '+variations[v]+'S', function() { Dms.parseDMS(variations[v]+'S').should.equal(-45.76260); });
+        for (var v in variations) test('parse dms variations '+variations[v]+'E', function() { Dms.parseDMS(variations[v]+'E').should.equal(45.76260); });
+        for (var v in variations) test('parse dms variations '+variations[v]+'W', function() { Dms.parseDMS(variations[v]+'W').should.equal(-45.76260); });
+        test('parse dms variations '+' ws before+after ', function() { Dms.parseDMS(' 45°45′45.36″ ').should.equal(45.76260); });
+    });
+
+    describe('output variations', function() {
+        test('output dms ',         function() { Dms.toDMS(45.76260).should.equal('045°45′45″'); });
+        test('output dms '+'d',     function() { Dms.toDMS(45.76260, 'd').should.equal('045.7626°'); });
+        test('output dms '+'dm',    function() { Dms.toDMS(45.76260, 'dm').should.equal('045°45.76′'); });
+        test('output dms '+'dms',   function() { Dms.toDMS(45.76260, 'dms').should.equal('045°45′45″'); });
+        test('output dms '+'dm,6',  function() { Dms.toDMS(45.76260, 'd', 6).should.equal('045.762600°'); });
+        test('output dms '+'dm,4',  function() { Dms.toDMS(45.76260, 'dm', 4).should.equal('045°45.7560′'); });
+        test('output dms '+'dms,2', function() { Dms.toDMS(45.76260, 'dms', 2).should.equal('045°45′45.36″'); });
+    });
+
+    describe('compass points', function() {
+        test('1 -> N ',       function() { Dms.compassPoint(1).should.equal('N'); });
+        test('0 -> N ',       function() { Dms.compassPoint(0).should.equal('N'); });
+        test('-1 -> N ',      function() { Dms.compassPoint(-1).should.equal('N'); });
+        test('359 -> N ',     function() { Dms.compassPoint(359).should.equal('N'); });
+        test('24 -> NNE ',    function() { Dms.compassPoint(24).should.equal('NNE'); });
+        test('24:1 -> N ',    function() { Dms.compassPoint(24, 1).should.equal('N'); });
+        test('24:2 -> NE ',   function() { Dms.compassPoint(24, 2).should.equal('NE'); });
+        test('24:3 -> NNE ',  function() { Dms.compassPoint(24, 3).should.equal('NNE'); });
+        test('226 -> SW ',    function() { Dms.compassPoint(226).should.equal('SW'); });
+        test('226:1 -> W ',   function() { Dms.compassPoint(226, 1).should.equal('W'); });
+        test('226:2 -> SW ',  function() { Dms.compassPoint(226, 2).should.equal('SW'); });
+        test('226:3 -> SW ',  function() { Dms.compassPoint(226, 3).should.equal('SW'); });
+        test('237 -> WSW ',   function() { Dms.compassPoint(237).should.equal('WSW'); });
+        test('237:1 -> W ',   function() { Dms.compassPoint(237, 1).should.equal('W'); });
+        test('237:2 -> SW ',  function() { Dms.compassPoint(237, 2).should.equal('SW'); });
+        test('237:3 -> WSW ', function() { Dms.compassPoint(237, 3).should.equal('WSW'); });
+    });
+
+});
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  Geodesy Test Harness - latlon-spherical                           (c) Chris Veness 2014-2016  */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+
+var chai = require('chai');  // BDD/TDD assertion library
+
+var LatLon = require('../npm.js').LatLonSpherical;
+var Dms    = require('../npm.js').Dms;
+
+chai.should();
+var test = it; // just an alias
+
+describe('latlon-spherical', function() {
+    var R = 6371e3;
+    var π = Math.PI;
+
+    describe('formatting', function() {
+        test('toString d',       function() { new LatLon(51.521470, -0.138833).toString('d', 6).should.equal('51.521470°N, 000.138833°W'); });
+        test('toString dms',     function() { new LatLon(51.521470, -0.138833).toString('dms', 2).should.equal('51°31′17.29″N, 000°08′19.80″W'); });
+    });
+
+    describe('geodesics', function() {
+        var cambg = new LatLon(52.205, 0.119), paris = new LatLon(48.857, 2.351);
+        test('distance',         function() { cambg.distanceTo(paris).toPrecision(4).should.equal('4.043e+5'); });
+        test('distance (miles)', function() { cambg.distanceTo(paris, 3959).toPrecision(4).should.equal('251.2'); });
+        test('initial bearing',  function() { cambg.bearingTo(paris).toFixed(1).should.equal('156.2'); });
+        test('final bearing',    function() { cambg.finalBearingTo(paris).toFixed(1).should.equal('157.9'); });
+        test('midpoint',         function() { cambg.midpointTo(paris).toString('d').should.equal('50.5363°N, 001.2746°E'); });
+        test('int.point',        function() { cambg.intermediatePointTo(paris, 0.25).toString('d').should.equal('51.3721°N, 000.7073°E'); });
+
+        var greenwich = new LatLon(51.4778, -0.0015), dist = 7794, brng = 300.7;
+        test('dest’n',           function() { greenwich.destinationPoint(dist, brng).toString('d').should.equal('51.5135°N, 000.0983°W'); });
+
+        var stn = new LatLon(51.8853, 0.2545), cdg = new LatLon(49.0034, 2.5735);
+        test('intersec’n',       function() { LatLon.intersection(stn, 108.547, cdg, 32.435).toString('d').should.equal('50.9078°N, 004.5084°E'); });
+
+        var bradwell = new LatLon(53.3206, -1.7297);
+        test('cross-track',      function() { new LatLon(53.2611, -0.7972).crossTrackDistanceTo(bradwell, new LatLon(53.1887,  0.1334)).toPrecision(4).should.equal('-307.5'); });
+
+        test('Clairaut 0°',      function() { new LatLon(0,0).maxLatitude( 0).should.equal(90); });
+        test('Clairaut 1°',      function() { new LatLon(0,0).maxLatitude( 1).should.equal(89); });
+        test('Clairaut 90°',     function() { new LatLon(0,0).maxLatitude(90).should.equal(0); });
+
+        var parallels = LatLon.crossingParallels(new LatLon(0,0), new LatLon(60,30), 30);
+        test('parallels 1',      function() { new LatLon(30, parallels.lon1).toString().should.equal('30°00′00″N, 009°35′39″E'); });
+        test('parallels 2',      function() { new LatLon(30, parallels.lon2).toString().should.equal('30°00′00″N, 170°24′21″E'); });
+
+        var lax = new LatLon(Dms.parseDMS('33° 57′N'), Dms.parseDMS('118° 24′W'));
+        var jfk = new LatLon(Dms.parseDMS('40° 38′N'), Dms.parseDMS('073° 47′W'));
+        test('EW distance nm',   function() { lax.distanceTo(jfk, 180*60/π).toPrecision(4).should.equal('2144'); });
+        test('EW bearing',       function() { lax.bearingTo(jfk).toPrecision(2).should.equal('66'); });
+        test('EW intermediate',  function() { lax.intermediatePointTo(jfk, 100/2144).toString('dm', 0).should.equal('34°37′N, 116°33′W'); });
+        var d = new LatLon(Dms.parseDMS('34:30N'), Dms.parseDMS('116:30W'));
+        test('EW cross-track',   function() { d.crossTrackDistanceTo(lax, jfk, 180*60/π).toPrecision(5).should.equal('7.4523'); });
+        test('EW along-track',   function() { d.alongTrackDistanceTo(lax, jfk, 180*60/π).toPrecision(5).should.equal('99.588'); });
+        test('EW intermediate',  function() { lax.intermediatePointTo(jfk, 0.4).toString('dm', 3).should.equal('38°40.167′N, 101°37.570′W'); });
+        var reo = new LatLon(Dms.parseDMS('42.600N'), Dms.parseDMS('117.866W'));
+        var bke = new LatLon(Dms.parseDMS('44.840N'), Dms.parseDMS('117.806W'));
+        test('EW intersection',  function() { LatLon.intersection(reo, 51, bke, 137).toString('d', 3).should.equal('43.572°N, 116.189°W'); });
+    });
+
+    describe('area', function() {
+        var polyTriangle = [ new LatLon(1,1), new LatLon(2,1), new LatLon(1,2) ];
+        var polySquareCw = [ new LatLon(1,1), new LatLon(2,1), new LatLon(2,2), new LatLon(1,2) ];
+        var polySquareCcw = [ new LatLon(1,1), new LatLon(1,2), new LatLon(2,2), new LatLon(2,1) ];
+        var polyQuadrant = [ new LatLon(0,1e-99), new LatLon(0,180), new LatLon(90,0) ];
+        var polyHemi = [ new LatLon(0,1), new LatLon(45,0), new LatLon(89,90), new LatLon(45,180), new LatLon(0,179), new LatLon(-45,180), new LatLon(-89,90), new LatLon(-45,0) ];
+        var polyPole = [ new LatLon(89,0), new LatLon(89,120), new LatLon(89,-120) ];
+        var polyConcave = [ new LatLon(1,1), new LatLon(5,1), new LatLon(5,3), new LatLon(1,3), new LatLon(3,2) ];
+        test('triangle area',    function() { LatLon.areaOf(polyTriangle).toFixed(0).should.equal('6181527888'); });
+        test('square cw area',   function() { LatLon.areaOf(polySquareCw).toFixed(0).should.equal('12360230987'); });
+        test('square ccw area',  function() { LatLon.areaOf(polySquareCcw).toFixed(0).should.equal('12360230987'); });
+        test('quadrant area',    function() { LatLon.areaOf(polyQuadrant).should.equal(Math.PI*R*R); });
+        test('hemisphere area',  function() { LatLon.areaOf(polyHemi).toFixed(0).should.equal('252684679676459'); });
+        test('pole area',        function() { LatLon.areaOf(polyPole).toFixed(0).should.equal('16063139192'); });
+        test('concave area',     function() { LatLon.areaOf(polyConcave).toFixed(0).should.equal('74042699236'); });
+    });
+
+    describe('rhumb lines', function() {
+        var dov = new LatLon(51.127, 1.338), cal = new LatLon(50.964, 1.853);
+        test('distance',         function() { dov.rhumbDistanceTo(cal).toPrecision(4).should.equal('4.031e+4'); });
+        test('bearing',          function() { dov.rhumbBearingTo(cal).toFixed(1).should.equal('116.7'); });
+        test('dest’n',           function() { dov.rhumbDestinationPoint(40310, 116.7).toString('d').should.equal('50.9641°N, 001.8531°E'); });
+        test('midpoint',         function() { dov.rhumbMidpointTo(cal).toString('d').should.equal('51.0455°N, 001.5957°E'); });
+    });
+
+});
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  Geodesy Test Harness - os-gridref                                 (c) Chris Veness 2014-2016  */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+
+var chai     = require('chai');  // BDD/TDD assertion library
+
+var LatLon   = require('../npm.js').LatLonVectors;
+var Vector3d = require('../npm.js').Vector3d;
+
+chai.should();
+var test = it; // just an alias
+
+describe('latlon-vectors', function() {
+    test('ll to v',           function() { LatLon(45, 45).toVector().toString().should.equal('[0.500,0.500,0.707]'); });
+    test('v to ll',           function() { Vector3d(0.500, 0.500, 0.707107).toLatLonS().toString('d').should.equal('45.0000°N, 045.0000°E'); });
+    test('great circle',      function() { LatLon(53.3206, -1.7297).greatCircle(96.0).toString().should.equal('[-0.794,0.129,0.594]'); });
+    test('distance',          function() { LatLon(52.205, 0.119).distanceTo(LatLon(48.857, 2.351)).toPrecision(4).should.equal('4.043e+5'); });
+    test('bearing',           function() { LatLon(52.205, 0.119).bearingTo(LatLon(48.857, 2.351)).toFixed(1).should.equal('156.2'); });
+    test('bearing (reverse)', function() { LatLon(48.857, 2.351).bearingTo(LatLon(52.205, 0.119)).toFixed(1).should.equal('337.9'); });
+    test('midpoint',          function() { LatLon(52.205, 0.119).midpointTo(LatLon(48.857, 2.351)).toString('d').should.equal('50.5363°N, 001.2746°E'); });
+    test('destination',       function() { LatLon(51.4778, -0.0015).destinationPoint(7794, 300.7).toString('d').should.equal('51.5135°N, 000.0983°W'); });
+    test('gc from vector',    function() { LatLon(53.3206, -1.7297).toVector().greatCircle(96.0).toString().should.equal('[-0.794,0.129,0.594]'); });
+
+    var N = 0, E = 90, S = 180, W = 270;
+    test('intersection toward 1,1 N,E nearest',        function() { LatLon.intersection(LatLon(0, 1), N, LatLon(1, 0), E).toString('d').should.equal('00.9998°N, 001.0000°E'); });
+    test('intersection toward 1,1 E,N nearest',        function() { LatLon.intersection(LatLon(1, 0), E, LatLon(0, 1), N).toString('d').should.equal('00.9998°N, 001.0000°E'); });
+    test('intersection toward 1,1 N,E antipodal',      function() { LatLon.intersection(LatLon(2, 1), N, LatLon(1, 0), E).toString('d').should.equal('00.9998°S, 179.0000°W'); });
+    test('intersection toward/away 1,1 N,W antipodal', function() { LatLon.intersection(LatLon(0, 1), N, LatLon(1, 0), W).toString('d').should.equal('00.9998°S, 179.0000°W'); });
+    test('intersection toward/away 1,1 W,N antipodal', function() { LatLon.intersection(LatLon(1, 0), W, LatLon(0, 1), N).toString('d').should.equal('00.9998°S, 179.0000°W'); });
+    test('intersection toward/away 1,1 S,E antipodal', function() { LatLon.intersection(LatLon(0, 1), S, LatLon(1, 0), E).toString('d').should.equal('00.9998°S, 179.0000°W'); });
+    test('intersection toward/away 1,1 E,S antipodal', function() { LatLon.intersection(LatLon(1, 0), E, LatLon(0, 1), S).toString('d').should.equal('00.9998°S, 179.0000°W'); });
+    test('intersection away 1,1 S,W antipodal',        function() { LatLon.intersection(LatLon(0, 1), S, LatLon(1, 0), W).toString('d').should.equal('00.9998°S, 179.0000°W'); });
+    test('intersection away 1,1 W,S antipodal',        function() { LatLon.intersection(LatLon(1, 0), W, LatLon(0, 1), S).toString('d').should.equal('00.9998°S, 179.0000°W'); });
+
+    test('intersection 1E/90E N,E antipodal',          function() { LatLon.intersection(LatLon(0, 1), N, LatLon(1, 90), E).toString('d').should.equal('00.0175°S, 179.0000°W'); });
+    test('intersection 1E/90E N,E nearest',            function() { LatLon.intersection(LatLon(0, 1), N, LatLon(1, 92), E).toString('d').should.equal('00.0175°N, 179.0000°W'); });
+
+    test('intersection brng+end 1a',                   function() { LatLon.intersection(LatLon(1, 0), LatLon(1, 3), LatLon(2, 2), S).toString('d').should.equal('01.0003°N, 002.0000°E'); });
+    test('intersection brng+end 1b',                   function() { LatLon.intersection(LatLon(2, 2), S, LatLon(1, 0), LatLon(1, 3)).toString('d').should.equal('01.0003°N, 002.0000°E'); });
+    test('intersection brng+end 2a',                   function() { LatLon.intersection(LatLon(1, 0), LatLon(1, 3), LatLon(2, 2), N).toString('d').should.equal('01.0003°S, 178.0000°W'); });
+    test('intersection brng+end 2b',                   function() { LatLon.intersection(LatLon(2, 2), N, LatLon(1, 0), LatLon(1, 3)).toString('d').should.equal('01.0003°S, 178.0000°W'); });
+
+    test('intersection end+end',                       function() { LatLon.intersection(LatLon(1, 1), LatLon(2, 2), LatLon(1, 4), LatLon(2, 3)).toString('d').should.equal('02.4994°N, 002.5000°E'); });
+
+    var stn = LatLon(51.8853, 0.2545), cdg = LatLon(49.0034, 2.5735);
+    test('intersection stn-cdg-bxl',                   function() { LatLon.intersection(stn, 108.547, cdg, 32.435).toString('d').should.equal('50.9078°N, 004.5084°E'); });
+
+    test('cross-track b', function() { LatLon(10, 0).crossTrackDistanceTo(LatLon(0, 0), 90).toPrecision(4).should.equal('-1.112e+6'); });
+    test('cross-track p', function() { LatLon(10, 1).crossTrackDistanceTo(LatLon(0, 0), LatLon(0, 2)).toPrecision(4).should.equal('-1.112e+6'); });
+    test('cross-track -', function() { LatLon(10, 0).crossTrackDistanceTo(LatLon(0, 0), 270).toPrecision(4).should.equal('1.112e+6'); });
+
+    test('nearest point on segment 1',  function() { LatLon(51.0, 1.9).nearestPointOnSegment(LatLon(51.0, 1.0), LatLon(51.0, 2.0)).toString('d').should.equal('51.0004°N, 001.9000°E'); });
+    test('nearest point on segment 1d', function() { LatLon(51.0, 1.9).nearestPointOnSegment(LatLon(51.0, 1.0), LatLon(51.0, 2.0)).distanceTo(LatLon(51.0, 1.9)).toPrecision(4).should.equal('42.71'); });
+    test('nearest point on segment 2',  function() { LatLon(51.0, 2.1).nearestPointOnSegment(LatLon(51.0, 1.0), LatLon(51.0, 2.0)).toString('d').should.equal('51.0000°N, 002.0000°E'); });
+
+    var polyHemi = [ new LatLon(0,1), new LatLon(45,0), new LatLon(89,90), new LatLon(45,180), new LatLon(0,179), new LatLon(-45,180), new LatLon(-89,90), new LatLon(-45,0) ];
+    var polyGc = [ new LatLon(10,0), new LatLon(10,90), new LatLon(0,45) ];
+    var polyPole = [ new LatLon(89,0), new LatLon(89,120), new LatLon(89,-120) ];
+    var polyPoleEdge = [ new LatLon(85,90), LatLon(85,0), new LatLon(85,-90) ];
+    var polyConcave = [ new LatLon(1,1), new LatLon(5,1), new LatLon(5,3), new LatLon(1,3), new LatLon(3,2) ];
+    test('hemisphere enclosed y', function() { new LatLon(22.5,0.59).enclosedBy(polyHemi).should.be.true; });
+    test('hemisphere enclosed n', function() { new LatLon(22.5,0.58).enclosedBy(polyHemi).should.be.false; });
+    test('gc enclosed y',         function() { new LatLon(14,45).enclosedBy(polyGc).should.be.true; });
+    test('gc enclosed n',         function() { new LatLon(15,45).enclosedBy(polyGc).should.be.false; });
+    test('pole enclosed',         function() { new LatLon(90,0).enclosedBy(polyPole).should.be.true; });
+    test('polar edge enclosed',   function() { new LatLon(90,0).enclosedBy(polyPoleEdge).should.be.true; });
+    test('concave enclosed y',    function() { new LatLon(4,2).enclosedBy(polyConcave).should.be.true; });
+    test('concave enclosed n',    function() { new LatLon(2,2).enclosedBy(polyConcave).should.be.false; });
+
+    test('equals true',  function() { LatLon(52.205, 0.119).equals(LatLon(52.205, 0.119)).should.be.true; });
+    test('equals false', function() { LatLon(52.206, 0.119).equals(LatLon(52.205, 0.119)).should.be.false; });
+});
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  Geodesy Test Harness - latlon-vincenty                            (c) Chris Veness 2014-2016  */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+
+var chai = require('chai');  // BDD/TDD assertion library
+
+var LatLon = require('../npm.js').LatLonEllipsoidal;
+
+chai.should();
+var test = it; // just an alias
+
+describe('latlon-vincenty', function() {
+    var le = new LatLon(50.06632, -5.71475), jog = new LatLon(58.64402, -3.07009);
+    test('vincenty inverse distance',              function() { le.distanceTo(jog).toFixed(3).should.equal('969954.166'); });
+    test('vincenty inverse initial bearing',       function() { le.initialBearingTo(jog).toFixed(4).should.equal('9.1419'); });
+    test('vincenty inverse final bearing',         function() { le.finalBearingTo(jog).toFixed(4).should.equal('11.2972'); });
+
+    var flindersPeak = new LatLon(-37.95103, 144.42487);
+    var buninyong = new LatLon(-37.6528, 143.9265);
+    test('vincenty direct destination',            function() { flindersPeak.destinationPoint(54972.271, 306.86816).toString('d').should.equal(buninyong.toString('d')); });
+    test('vincenty direct final brng',             function() { flindersPeak.finalBearingOn(54972.271, 306.86816).toFixed(4).should.equal('307.1736'); });
+    test('vincenty antipodal distance',            function() { new LatLon(0, 0).distanceTo(new LatLon(0.5, 179.5)).should.equal(19936288.579); });
+
+    test('vincenty antipodal convergence failure', function() { new LatLon(0, 0).distanceTo(new LatLon(0.5, 179.7)).should.be.NaN; });
+});
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  Geodesy Test Harness - os-gridref                                 (c) Chris Veness 2014-2016  */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+
+var chai      = require('chai');  // BDD/TDD assertion library
+
+var LatLon    = require('../npm.js').LatLonEllipsoidal;
+var OsGridRef = require('../npm.js').OsGridRef;
+var Dms       = require('../npm.js').Dms;
+
+chai.should();
+var test = it; // just an alias
+
+describe('os-gridref', function() {
+    var osgb=null, gridref=null;
+
+    // OS Guide to coordinate systems in Great Britain C.1, C.2; Caister water tower
+
+    osgb = new LatLon(Dms.parseDMS('52°39′27.2531″N'), Dms.parseDMS('1°43′4.5177″E'), LatLon.datum.OSGB36);
+    gridref = OsGridRef.latLonToOsGrid(osgb);
+    test('C1 E',                         function() { gridref.easting.toFixed(3).should.equal('651409.903'); });
+    test('C1 N',                         function() { gridref.northing.toFixed(3).should.equal('313177.270'); });
+    var osgb2 = OsGridRef.osGridToLatLon(gridref, LatLon.datum.OSGB36);
+    test('C1 round-trip',                function() { osgb2.toString('dms', 4).should.equal('52°39′27.2531″N, 001°43′04.5177″E'); });
+
+    gridref = new OsGridRef(651409.903, 313177.270);
+    osgb = OsGridRef.osGridToLatLon(gridref, LatLon.datum.OSGB36);
+    test('C2',                           function() { osgb.toString('dms', 4).should.equal('52°39′27.2531″N, 001°43′04.5177″E'); });
+    var gridref2 = OsGridRef.latLonToOsGrid(osgb);
+    test('C2 E round-trip',              function() { gridref2.easting.toFixed(3).should.equal('651409.903'); });
+    test('C2 N round-trip',              function() { gridref2.northing.toFixed(3).should.equal('313177.270'); });
+
+    test('parse 100km origin',           function() { OsGridRef.parse('SU00').toString().should.equal('SU 00000 00000'); });
+    test('parse 100km origin',           function() { OsGridRef.parse('SU 0 0').toString().should.equal('SU 00000 00000'); });
+    test('parse no whitespace',          function() { OsGridRef.parse('SU387148').toString().should.equal('SU 38700 14800'); });
+    test('parse 6-digit',                function() { OsGridRef.parse('SU 387 148').toString().should.equal('SU 38700 14800'); });
+    test('parse 10-digit',               function() { OsGridRef.parse('SU 38700 14800').toString().should.equal('SU 38700 14800'); });
+    test('parse numeric',                function() { OsGridRef.parse('438700,114800').toString().should.equal('SU 38700 14800'); });
+
+    var greenwichWGS84 = LatLon(51.4778, -0.0016); // default WGS84
+    var greenwichOSGB36 = greenwichWGS84.convertDatum(LatLon.datum.OSGB36);
+    test('convert WGS84 -> OSGB36',      function() { greenwichOSGB36.toString('d').should.equal('51.4773°N, 000.0000°E'); });
+    test('convert OSGB36 -> WGS84',      function() { greenwichOSGB36.convertDatum(LatLon.datum.WGS84).toString('d').should.equal('51.4778°N, 000.0016°W'); });
+
+    // limits
+    test('SW regular', function() { new OsGridRef(     0,       0).toString().should.equal('SV 00000 00000'); });
+    test('NE regular', function() { new OsGridRef(699999, 1299999).toString().should.equal('JM 99999 99999'); });
+    test('SW numeric', function() { new OsGridRef(     0,       0).toString('0').should.equal('000000,000000'); });
+    test('NW numeric', function() { new OsGridRef(699999, 1299999).toString('0').should.equal('699999,1299999'); }); // note 7-digit N
+
+    // DG round-trip
+
+    var dgGridRef = OsGridRef.parse('TQ 44359 80653');
+
+    // round-tripping OSGB36 works perfectly
+    var dgOsgb = OsGridRef.osGridToLatLon(dgGridRef, LatLon.datum.OSGB36);
+    test('DG round-trip OSGB36',         function() { dgGridRef.toString().should.equal( OsGridRef.latLonToOsGrid(dgOsgb).toString()); });
+    test('DG round-trip OSGB36 numeric', function() { OsGridRef.latLonToOsGrid(dgOsgb).toString(0).should.equal('544359,180653'); });
+
+    // reversing Helmert transform (OSGB->WGS->OSGB) introduces small error (≈ 3mm in UK), so WGS84
+    // round-trip is not quite perfect: test needs to incorporate 3mm error to pass
+    var dgWgs = OsGridRef.osGridToLatLon(dgGridRef); // default is WGS84
+    test('DG round-trip WGS84 numeric',  function() { OsGridRef.latLonToOsGrid(dgWgs).toString(0).should.equal('544358.997,180653'); });
+});
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  Geodesy Test Harness - utm/mgrs                                   (c) Chris Veness 2014-2016  */
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+
+var chai = require('chai');  // BDD/TDD assertion library
+
+var LatLon = require('../npm.js').LatLonEllipsoidal;
+var Utm    = require('../npm.js').Utm;
+var Mgrs   = require('../npm.js').Mgrs;
+
+chai.should();
+var test = it; // just an alias
+
+describe('utm/mgrs', function() {
+    // http://geographiclib.sourceforge.net/cgi-bin/GeoConvert
+    // http://www.rcn.montana.edu/resources/converter.aspx
+
+    // latitude/longitude -> UTM
+    test('LL->UTM 0,0',                function() { new LatLon( 0,  0).toUtm().toString(6).should.equal('31 N 166021.443081 0.000000'); });
+    test('LL->UTM 1,1',                function() { new LatLon( 1,  1).toUtm().toString(6).should.equal('31 N 277438.263521 110597.972524'); });
+    test('LL->UTM -1,-1',              function() { new LatLon(-1, -1).toUtm().toString(6).should.equal('30 S 722561.736479 9889402.027476'); });
+    test('LL->UTM eiffel tower',       function() { new LatLon( 48.8583,   2.2945).toUtm().toString(3).should.equal('31 N 448251.898 5411943.794'); });
+    test('LL->UTM sidney o/h',         function() { new LatLon(-33.857,  151.215 ).toUtm().toString(3).should.equal('56 S 334873.199 6252266.092'); });
+    test('LL->UTM white house',        function() { new LatLon( 38.8977, -77.0365).toUtm().toString(3).should.equal('18 N 323394.296 4307395.634'); });
+    test('LL->UTM rio christ',         function() { new LatLon(-22.9519, -43.2106).toUtm().toString(3).should.equal('23 S 683466.254 7460687.433'); });
+    test('LL->UTM bergen',             function() { new LatLon( 60.39135,  5.3249).toUtm().toString(3).should.equal('32 N 297508.410 6700645.296'); });
+    test('LL->UTM bergen convergence', function() { new LatLon( 60.39135,  5.3249).toUtm().convergence.should.equal(-3.196281440); });
+    test('LL->UTM bergen scale',       function() { new LatLon( 60.39135,  5.3249).toUtm().scale.should.equal(    1.000102473211); });
+
+    // UTM -> latitude/longitude
+    test('UTM->LL 0,0',                function() { Utm.parse('31 N 166021.443081 0.000000').toLatLonE().toString().should.equal(new LatLon(0, 0).toString()); });
+    test('UTM->LL 1,1',                function() { Utm.parse('31 N 277438.263521 110597.972524').toLatLonE().toString().should.equal(new LatLon( 1,  1).toString()); });
+    test('UTM->LL -1,-1',              function() { Utm.parse('30 S 722561.736479 9889402.027476').toLatLonE().toString().should.equal(new LatLon(-1, -1).toString()); });
+    test('UTM->LL eiffel tower',       function() { Utm.parse('31 N 448251.898 5411943.794').toLatLonE().toString().should.equal(new LatLon( 48.8583,   2.2945).toString()); });
+    test('UTM->LL sidney o/h',         function() { Utm.parse('56 S 334873.199 6252266.092').toLatLonE().toString().should.equal(new LatLon(-33.857,  151.215 ).toString()); });
+    test('UTM->LL white house',        function() { Utm.parse('18 N 323394.296 4307395.634').toLatLonE().toString().should.equal(new LatLon( 38.8977, -77.0365).toString()); });
+    test('UTM->LL rio christ',         function() { Utm.parse('23 S 683466.254 7460687.433').toLatLonE().toString().should.equal(new LatLon(-22.9519, -43.2106).toString()); });
+    test('UTM->LL bergen',             function() { Utm.parse('32 N 297508.410 6700645.296').toLatLonE().toString().should.equal(new LatLon( 60.39135,  5.3249).toString()); });
+    test('UTM->LL bergen convergence', function() { Utm.parse('32 N 297508.410 6700645.296').toLatLonE().convergence.should.equal(-3.196281443); });
+    test('UTM->LL bergen scale',       function() { Utm.parse('32 N 297508.410 6700645.296').toLatLonE().scale.should.equal(    1.000102473212); });
+
+    // UTM -> MGRS
+    test('UTM->MGRS 0,0',              function() { Utm.parse('31 N 166021.443081 0.000000').toMgrs().toString().should.equal('31N AA 66021 00000'); });
+    test('UTM->MGRS 1,1',              function() { Utm.parse('31 N 277438.263521 110597.972524').toMgrs().toString().should.equal('31N BB 77438 10597'); });
+    test('UTM->MGRS -1,-1',            function() { Utm.parse('30 S 722561.736479 9889402.027476').toMgrs().toString().should.equal('30M YD 22561 89402'); });
+    test('UTM->MGRS eiffel tower',     function() { Utm.parse('31 N 448251.898 5411943.794').toMgrs().toString().should.equal('31U DQ 48251 11943'); });
+    test('UTM->MGRS sidney o/h',       function() { Utm.parse('56 S 334873.199 6252266.092').toMgrs().toString().should.equal('56H LH 34873 52266'); });
+    test('UTM->MGRS white house',      function() { Utm.parse('18 N 323394.296 4307395.634').toMgrs().toString().should.equal('18S UJ 23394 07395'); });
+    test('UTM->MGRS rio christ',       function() { Utm.parse('23 S 683466.254 7460687.433').toMgrs().toString().should.equal('23K PQ 83466 60687'); });
+    test('UTM->MGRS bergen',           function() { Utm.parse('32 N 297508.410 6700645.296').toMgrs().toString().should.equal('32V KN 97508 00645'); });
+
+    // MGRS -> UTM
+    test('MGRS->UTM 0,0',              function() { Mgrs.parse('31N AA 66021 00000').toUtm().toString().should.equal('31 N 166021 0'); });
+    test('MGRS->UTM 1,1',              function() { Mgrs.parse('31N BB 77438 10597').toUtm().toString().should.equal('31 N 277438 110597'); });
+    test('MGRS->UTM -1,-1',            function() { Mgrs.parse('30M YD 22561 89402').toUtm().toString().should.equal('30 S 722561 9889402'); });
+    test('MGRS->UTM eiffel tower',     function() { Mgrs.parse('31U DQ 48251 11943').toUtm().toString().should.equal('31 N 448251 5411943'); });
+    test('MGRS->UTM sidney o/h',       function() { Mgrs.parse('56H LH 34873 52266').toUtm().toString().should.equal('56 S 334873 6252266'); });
+    test('MGRS->UTM white house',      function() { Mgrs.parse('18S UJ 23394 07395').toUtm().toString().should.equal('18 N 323394 4307395'); });
+    test('MGRS->UTM rio christ',       function() { Mgrs.parse('23K PQ 83466 60687').toUtm().toString().should.equal('23 S 683466 7460687'); });
+    test('MGRS->UTM bergen',           function() { Mgrs.parse('32V KN 97508 00645').toUtm().toString().should.equal('32 N 297508 6700645'); });
+    // forgiving parsing of 100km squares spanning bands
+    test('MGRS->UTM 01P ≡ UTM 01Q',    function() { Mgrs.parse('01P ET 00000 68935').toUtm().toString().should.equal('01 N 500000 1768935'); });
+    test('MGRS->UTM 01Q ≡ UTM 01P',    function() { Mgrs.parse('01Q ET 00000 68935').toUtm().toString().should.equal('01 N 500000 1768935'); });
+
+    // https://www.ibm.com/developerworks/library/j-coordconvert/#listing7 (note UTM/MGRS confusion; UTM is rounded, MGRS is truncated; UPS not included)
+    test('IBM #01 UTM->LL',            function() { Utm.parse('31 N 166021 0').toLatLonE().toString('d').should.equal('00.0000°N, 000.0000°W'); });
+    test('IBM #02 UTM->LL',            function() { Utm.parse('30 N 808084 14385').toLatLonE().toString('d').should.equal('00.1300°N, 000.2324°W'); });
+    test('IBM #03 UTM->LL',            function() { Utm.parse('34 S 683473 4942631').toLatLonE().toString('d').should.equal('45.6456°S, 023.3545°E'); });
+    test('IBM #04 UTM->LL',            function() { Utm.parse('25 S 404859 8588690').toLatLonE().toString('d').should.equal('12.7650°S, 033.8765°W'); });
+    test('IBM #09 UTM->LL',            function() { Utm.parse('08 N 453580 2594272').toLatLonE().toString('d').should.equal('23.4578°N, 135.4545°W'); });
+    test('IBM #10 UTM->LL',            function() { Utm.parse('57 N 450793 8586116').toLatLonE().toString('d').should.equal('77.3450°N, 156.9876°E'); });
+    test('IBM #01 LL->UTM',            function() { new LatLon(  0.0000,    0.0000).toUtm().toString().should.equal('31 N 166021 0'); });
+    test('IBM #01 LL->MGRS',           function() { new LatLon(  0.0000,    0.0000).toUtm().toMgrs().toString().should.equal('31N AA 66021 00000'); });
+    test('IBM #02 LL->UTM',            function() { new LatLon(  0.1300,   -0.2324).toUtm().toString().should.equal('30 N 808084 14386'); });
+    test('IBM #02 LL->MGRS',           function() { new LatLon(  0.1300,   -0.2324).toUtm().toMgrs().toString().should.equal('30N ZF 08084 14385'); });
+    test('IBM #03 LL->UTM',            function() { new LatLon(-45.6456,   23.3545).toUtm().toString().should.equal('34 S 683474 4942631'); });
+    test('IBM #03 LL->MGRS',           function() { new LatLon(-45.6456,   23.3545).toUtm().toMgrs().toString().should.equal('34G FQ 83473 42631'); });
+    test('IBM #04 LL->UTM',            function() { new LatLon(-12.7650,  -33.8765).toUtm().toString().should.equal('25 S 404859 8588691'); });
+    test('IBM #04 LL->MGRS',           function() { new LatLon(-12.7650,  -33.8765).toUtm().toMgrs().toString().should.equal('25L DF 04859 88691'); });
+    test('IBM #09 LL->UTM',            function() { new LatLon( 23.4578, -135.4545).toUtm().toString().should.equal('08 N 453580 2594273'); });
+    test('IBM #09 LL->MGRS',           function() { new LatLon( 23.4578, -135.4545).toUtm().toMgrs().toString().should.equal('08Q ML 53580 94272'); });
+    test('IBM #10 LL->UTM',            function() { new LatLon( 77.3450,  156.9876).toUtm().toString().should.equal('57 N 450794 8586116'); });
+    test('IBM #10 LL->MGRS',           function() { new LatLon( 77.3450,  156.9876).toUtm().toMgrs().toString().should.equal('57X VF 50793 86116'); });
+
+    // varying resolution
+    test('MGRS 4-digit -> UTM',        function() { Mgrs.parse('12S TC 52 86').toUtm().toString().should.equal('12 N 252000 3786000'); });
+    test('MGRS 10-digit -> UTM',       function() { Mgrs.parse('12S TC 52000 86000').toUtm().toString().should.equal('12 N 252000 3786000'); });
+    test('MGRS 10-digit+decimals',     function() { Mgrs.parse('12S TC 52000.123 86000.123').toUtm().toString(3).should.equal('12 N 252000.123 3786000.123'); });
+    test('MGRS truncate',              function() { Mgrs.parse('12S TC 52999.999 86999.999').toString(6).should.equal('12S TC 529 869'); });
+    test('MGRS-UTM round',             function() { Mgrs.parse('12S TC 52999.999 86999.999').toUtm().toString().should.equal('12 N 253000 3787000'); });
+});
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 /* UTM / WGS-84 Conversion Functions                                  (c) Chris Veness 2014-2016  */
 /*                                                                                   MIT Licence  */
 /* www.movable-type.co.uk/scripts/latlong-utm-mgrs.html                                           */
 /* www.movable-type.co.uk/scripts/geodesy/docs/module-utm.html                                    */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
+if (typeof module!='undefined' && module.exports) var LatLon = require('./latlon-ellipsoidal.js'); // ≡ import LatLon from 'latlon-ellipsoidal.js'
 
 
 /**
@@ -3897,11 +4337,16 @@ if (String.prototype.trim === undefined) {
         return String(this).replace(/^\s\s*/, '').replace(/\s\s*$/, '');
     };
 }
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+if (typeof module != 'undefined' && module.exports) module.exports = Utm; // ≡ export default Utm
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 /* Vector handling functions                                          (c) Chris Veness 2011-2016  */
 /*                                                                                   MIT Licence  */
 /* www.movable-type.co.uk/scripts/geodesy/docs/module-vector3d.html                               */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+'use strict';
 
 
 /**
@@ -4136,6 +4581,10 @@ Vector3d.prototype.toString = function(precision) {
 
     return str;
 };
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+if (typeof module != 'undefined' && module.exports) module.exports = Vector3d; // ≡ export default Vector3d
 /**
  * Section 5.3.6.5. Acknowledge the receiptof a start/resume, stop/freeze, or RemoveEntityPDU. COMPLETE
  *
