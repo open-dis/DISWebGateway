@@ -167,16 +167,6 @@
             function initialize()
             {
                 
-                // Initialize munition type. M855 5.56 round
-                rifleMunition.country = 225;   // usa
-                rifleMunition.domain = 8;      // anti-personnel
-                rifleMunition.entityKind = 2;  // Munition
-                rifleMunition.category = 2;    // ballistic
-                rifleMunition.subcategory = 1; // 5.56 caliber
-                rifleMunition.spec = 5;        // M855 (vs tracer, etc)
-                rifleMunition.extra = 0;
-                
-                
                 websocket = new WebSocket(WEBSOCKET_URL);
 
                 // Set the format we want to use to receive binary messages
@@ -195,7 +185,7 @@
                      switch(disMessage.pduType)
                      {
                         case 1: 
-                            //console.log("ESPDU");
+                            // Call function to handle espdus
                             break;
                             
                         case 2:
@@ -204,7 +194,6 @@
 
                         case 3:
                            console.log("Detonation PDU");
-                           assessDamageToOurEntities(disMessage);
                            break;
                             
                         default:
@@ -231,17 +220,6 @@
  function assessDamageToOurEntities(detonationPdu)
  {
      console.log("Assessing damage for detonation:", detonationPdu);
-     
-     // Information from the detonation PDU
-     var detonationMunition = detonationPdu.burstDescriptor.munition;
-     var targetEntityID = detonationPdu.targetEntityID;
-     var detonationLocation = detonationPdu.locationInWorldCoordinates;
-     
-     // Our information
-     var ourLocation = espdu.entityLocation;
-     var ourEntityID = espdu.entityID;
-     
-     // Assess damage here
  }
  
  function entityIDsEqual(eid1, eid2)

@@ -82,32 +82,15 @@
        var ammoSelect = document.getElementById("ammo");
        var ammo = ammoSelect.options[ammoSelect.selectedIndex].value;
        console.log("Ammo type: ", ammo);
+       
        switch(ammo)
        {
            case "40mmGrenade":
-               console.log("40mm grenade");
-               var burst = firePdu.burstDescriptor;
-               var munition = burst.munition;
-               //US 40mm HEDP grenade
-               munition.kind = 2;
-               munition.domain = 9;
-               munition.country = 225; // US
-               munition.category = 1;
-               munition.subcategory = 4;
-               munition.spec = 2;
+              // create a 40mm grenade munition
                break;
                
             case "556Rifle":
-                console.log("Rifle");
-                var burst = firePdu.burstDescriptor;
-                var munition = burst.munition;
-                // 5.56 ball ammo
-                munition.kind = 2;
-                munition.domain = 8;
-                munition.country = 225; // US
-                munition.category = 2;
-                munition.subcategory = 1;
-                munition.spec = 5;
+                // create a 5.56 rifle munitiom
                 break;
                 
             default:
@@ -117,121 +100,22 @@
        eventIndex++;
        firePdu.eventID.eventNumber = eventIndex;
        
-       // Position of shooter
-        var lat = parseFloat(document.getElementById("sLat").value);
-        var lon = parseFloat(document.getElementById("sLon").value);
-        var alt = parseFloat(document.getElementById("sAlt").value);
-                
-       // Convert lat/lon/alt to DIS coordinates
-        var conversion = new dis.CoordinateConversion();
-        latLonAlt = {};
-        latLonAlt.lat = lat;
-        latLonAlt.lon = lon;
-        latLonAlt.alt = alt;
-
-        var disCoordinates = conversion.getXYZfromLatLonAltDegrees(latLonAlt);
-        firePdu.locationInWorldCoordinates.x = disCoordinates.x;
-        firePdu.locationInWorldCoordinates.y = disCoordinates.y;
-        firePdu.locationInWorldCoordinates.z = disCoordinates.z;
-        
-        // Send Fire PDU
-        var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
-        var outputStream = new dis.OutputStream(dataBuffer);
-        firePdu.encodeToBinaryDIS(outputStream);
-
-        // Trim to fit
-        var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
-        websocket.send(trimmedData);
-        console.log("Send firePDU:", firePdu);
+       // create and send fire PDU
    }
    
+   /**
+    * Create and send a detonation PDU
+    * @returns {undefined}
+    */
    function detonation()
    {
-       console.log("kablooie");
        var detonationPdu = new dis.DetonationPdu();
-       detonationPdu.firingEntityID.site = parseInt(document.getElementById("dfSiteID").value);
-       detonationPdu.firingEntityID.application = parseInt(document.getElementById("dfApplicationID").value);
-       detonationPdu.firingEntityID.entity = parseInt(document.getElementById("dfEntityID").value);
        
-       detonationPdu.targetEntityID.site = parseInt(document.getElementById("dtSiteID").value);
-       detonationPdu.targetEntityID.application = parseInt(document.getElementById("dtApplicationID").value);
-       detonationPdu.targetEntityID.entity = parseInt(document.getElementById("dtEntityID").value);
-       
-       // Ammo type being shot
        var ammoSelect = document.getElementById("ammo");
        var ammo = ammoSelect.options[ammoSelect.selectedIndex].value;
        console.log("Ammo type: ", ammo);
-       switch(ammo)
-       {
-           case "40mmGrenade":
-               console.log("artillery");
-               var burst = detonationPdu.burstDescriptor;
-               burst.warhead = 5000;
-               burst.fuse = 100;
-               burst.rate = 1;
-               burst.quantity = 1;
-                
-               var munition = burst.munition;
-               //US 40mm HEDP grenade
-               munition.kind = 2;
-               munition.domain = 9;
-               munition.country = 225; // US
-               munition.category = 1;
-               munition.subcategory = 4;
-               munition.spec = 2;
-               break;
-               
-            case "556Rifle":
-                console.log("Rifle");
-                var burst = detonationPdu.burstDescriptor;
-                burst.warhead = 5000;
-                burst.fuse = 100;
-                burst.rate = 1;
-                burst.quantity = 1;
-                
-                var munition = burst.munition;
-                //5.56 ball ammo
-                munition.kind = 2;
-                munition.domain = 8;
-                munition.country = 225; // US
-                munition.category = 2;
-                munition.subcategory = 1;
-                munition.spec = 5;
-                break;
-                
-            default:
-                break;
-       }
        
-       
-       detonationPdu.eventID.eventNumber = eventIndex;
-       
-       // Position of shooter
-        var lat = parseFloat(document.getElementById("dLat").value);
-        var lon = parseFloat(document.getElementById("dLon").value);
-        var alt = parseFloat(document.getElementById("dAlt").value);
-                
-       // Convert lat/lon/alt to DIS coordinates
-        var conversion = new dis.CoordinateConversion();
-        latLonAlt = {};
-        latLonAlt.lat = lat;
-        latLonAlt.lon = lon;
-        latLonAlt.alt = alt;
-
-        var disCoordinates = conversion.getXYZfromLatLonAltDegrees(latLonAlt);
-        detonationPdu.locationInWorldCoordinates.x = disCoordinates.x;
-        detonationPdu.locationInWorldCoordinates.y = disCoordinates.y;
-        detonationPdu.locationInWorldCoordinates.z = disCoordinates.z;
-        
-        // Send Fire PDU
-        var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
-        var outputStream = new dis.OutputStream(dataBuffer);
-        detonationPdu.encodeToBinaryDIS(outputStream);
-
-        // Trim to fit
-        var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
-        websocket.send(trimmedData);
-        console.log("Send detonationPdu", detonationPdu);
+      
    }
 
     /**
