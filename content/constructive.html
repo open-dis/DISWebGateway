@@ -179,20 +179,22 @@
                  // We don't really need to receive anything, just blindly send
                  websocket.onmessage = function(evt)
                  { 
-                     var disMessage = pduFactory.createPdu(evt.data);
+                     var aPdu = pduFactory.createPdu(evt.data);
                      //console.log("PDU:", disMessage);
-                     switch(disMessage.pduType)
+                     switch(aPdu.pduType)
                      {
                         case 1: 
-                            // Call function to handle espdus
+                            entityStatePduHandler(aPdu);
                             break;
                             
                         case 2:
                            console.log("Fire PDU:", disMessage);
+                           firePduHandler(aPdu);
                            break;
 
                         case 3:
                            console.log("Detonation PDU");
+                           detonationPduHandler(aPdu);
                            break;
                             
                         default:
@@ -202,6 +204,59 @@
                  }
                 
             }
+     
+     /**
+      * Call this function to process an entity state pdu
+      * 
+      * @param {EntityStatePdu} espdu
+      * @returns {void}
+      */
+    function entityStatePduHandler(espdu)
+    {
+        if(espdu.pduType != 1)
+        {
+            console.log("Sent a non-espdu PDU to entityStatePduHandler");
+            return;
+        }
+        
+        // Process an entity state PDU here
+    }
+    
+    
+    /** 
+     * Call this function to process a FirePdu
+     * 
+     * @param {FirePdu} firePdu
+     * @returns {void}
+     */
+    function firePduHandler(firePdu)
+    {
+       if(firePdu.pduType != 2)
+       {
+           console.log("You sent a PDU that is not a fire PDU to firePduHandler");
+           return;
+       }
+       
+       // Process PDU here
+    }
+    
+    /**
+     * Call this function to process a detonation pdu
+     * 
+     * @param {DetonationPdu} detonationPdu
+     * @returns {void}
+     */
+    function detonationPduHandler(detonationPdu)
+    {
+        if(detonationPdu.pduType != 3)
+        {
+            console.log("You sent a PDU that is not a detonation pdu to detonationPduHandler");
+            return;
+        }
+        
+        // Handle the detonation PDU here
+        
+    }
    
    /**
     * Write code to assess damage to our entity here. Assume
