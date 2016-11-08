@@ -23,12 +23,12 @@
         <div id="data">
             
             <form id="EspduForm" action="form_action.asp">
-                <b>Entity Type Information</b><br>
+                <b>Entity Type Information; Russian T-72 by Default</b><br>
                   Kind: <input type="text" name="entitykind" id="entitykind" value="1"><br>
-                  Domain: <input type="text" name="domain" id="domain" value="3"><br>
-                  Country <input type="text" name="country" id="country" value="225"><br>
+                  Domain: <input type="text" name="domain" id="domain" value="1"><br>
+                  Country <input type="text" name="country" id="country" value="222"><br>
                   Category<input type="text" name="category" id="category" value="1"><br>
-                  Subcategory<input type="text" name="subcategory" id="subcategory" value="1"><br>
+                  Subcategory<input type="text" name="subcategory" id="subcategory" value="2"><br>
                   Specific<input type="text" name="specific" id="specific" value="1"><br>
                   Extra<input type="text" name="extra" id="extra" value="1"><br><br>
                   
@@ -50,7 +50,7 @@
                   <b>Send Frequency </b><br>
                   Send Frequency (ms)<input type="text" name="sendfrequency" id="sendfrequency" value="5000"><br>
                           
-            <input type="button" name="submit" value="Submit" onClick="constructiveSend(this.form)" >
+            <input type="button" name="submit" value="Start Sending PDUs" onClick="constructiveSend(this.form)" >
 </form>
         </div>
         
