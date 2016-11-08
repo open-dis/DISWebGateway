@@ -180,7 +180,7 @@
                  websocket.onmessage = function(evt)
                  { 
                      var aPdu = pduFactory.createPdu(evt.data);
-                     //console.log("PDU:", disMessage);
+                     //console.log("PDU:", aPdu);
                      switch(aPdu.pduType)
                      {
                         case 1: 
@@ -188,7 +188,7 @@
                             break;
                             
                         case 2:
-                           console.log("Fire PDU:", disMessage);
+                           console.log("Fire PDU:", aPdu);
                            firePduHandler(aPdu);
                            break;
 
