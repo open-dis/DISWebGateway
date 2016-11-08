@@ -150,12 +150,11 @@
             {
                 var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
                 var outputStream = new dis.OutputStream(dataBuffer);
-                espdu.encodeToBinaryDIS(outputStream);
+                espdu.encodeToBinary(outputStream);
                 
-                // Trim to fit
-                var trimmedData = dataBuffer.slice(0, outputStream.currentPosition);
+                var trimmedData = outputStream.toByteArray();
                 websocket.send(trimmedData);
-                //console.log("Sent pdu ", espdu);
+                console.log("Sent pdu ", espdu);
                 
             }
             
