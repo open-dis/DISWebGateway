@@ -9,6 +9,8 @@ package edu.nps.moves.gateway;
  * a client connects a websocket to us, one instance per connection. Typically there's one
  * websocket opened from the web page to the server.
  * 
+ * This is the server side view of a connection.
+ * 
  * @author DMcG
  */
 
@@ -29,23 +31,32 @@ import java.io.IOException;
 import java.util.IntSummaryStatistics;
 
 @WebSocket
-public class WebPageConnection implements DISEndpoint
+public class WebPageConnection implements DisEndpoint
 {
-    private static int count = 0;
+    /** Every web socket connection has a unique number. This 
+     * keeps a running count of the next.
+     */
+    private static int nextConnectionNumber = 0;
     
     /** The far side of the connection */
     private RemoteEndpoint remote;
+    
+    /** A unique connection number for each connection to a web page. */
     int connectionNumber = 0;
     
+    /** Every connection can have an area of interest script attached
+     * to it. This can do filtering on the server side based on arbitrary
+     * criteria; it simply runs a Javacript program and provides a yes-or-no
+     * answer about whether the server should forward it to the client.
+     */
     AreaOfInterest aoim = null;
     
+    /** The connection manager holds all the connections */
     ConnectionManager connectionManager = ConnectionManager.getConnectionManager();
    
-     /** Summary stats for messages sent */
-    IntSummaryStatistics messagesSent = new IntSummaryStatistics();
+    /** Collects stats on each connection--number of messages, bytes, latency, etc. */
+    ConnectionStatistics connectionStatistics;
     
-    /** Summary stats for messages received */
-    IntSummaryStatistics messagesReceived = new IntSummaryStatistics();
 
     /** Fired when the websocket from the client connects. Add it to the ConnectionManager's
      * list of connections.
@@ -57,8 +68,9 @@ public class WebPageConnection implements DISEndpoint
     {
         System.out.println("WebSocket Opened");
         this.remote = session.getRemote();
-        count++;
-        this.connectionNumber = count;
+        nextConnectionNumber++;
+        this.connectionNumber = nextConnectionNumber;
+        connectionStatistics = new ConnectionStatistics();
         
         // Add javascript AOIM to the connection
         
@@ -91,7 +103,7 @@ public class WebPageConnection implements DISEndpoint
     {
         //System.out.println("Message from Client: " + message);
         connectionManager.repeatMessage(message, this);
-        messagesReceived.accept(1);
+        connectionStatistics.messageSent(message.getBytes());
        
     }
     
@@ -113,7 +125,7 @@ public class WebPageConnection implements DISEndpoint
        // which can be slow. The idea is that we want to get in an out fast in
        // this method.
        connectionManager.enqueueBinaryMessage(buf, this);
-       messagesSent.accept(1);
+       connectionStatistics.messageSent(buf);
     }
 
     /** Fired when the web socket closes. The client informs us, and we remove
@@ -140,7 +152,7 @@ public class WebPageConnection implements DISEndpoint
         try
         {
             remote.sendString(message);
-            messagesSent.accept(1);
+            connectionStatistics.messageSent(message.getBytes());
         }
         catch(IOException e)
         {
@@ -173,7 +185,7 @@ public class WebPageConnection implements DISEndpoint
         {
             remote.sendBytes(ByteBuffer.wrap(buf));
             remote.flush();
-            messagesSent.accept(1);
+            connectionStatistics.messageSent(buf);
             //System.out.println("Sent to connection " + connectionNumber);
         }
         catch(IOException e)
@@ -185,26 +197,9 @@ public class WebPageConnection implements DISEndpoint
         }
     }
     
-   /** Get the summary statistics object for this connection
-    *  for the number of  messages (binary and json) sent. IntSummaryStatistics
-    *  is a JDK8 class.
-    * 
-    * @return IntSummaryStatistics summary stats for messages sent
-    */
-   public IntSummaryStatistics getMessagesSentSummaryStatistics()
-   {
-       return messagesSent;
-   }
-   
-   /** Get the summary statistics object for this connection
-    *  for the number of binary messages (binary and json) received. 
-    * IntSummaryStatistics is a JDK8 class.
-    * 
-    * @return IntSummaryStatistics summary stats for messages sent
-    */
-    public IntSummaryStatistics getMessagesReceivedSummaryStatistics()
+    public ConnectionStatistics getConnectionStatistics()
     {
-        return messagesReceived;
+        return connectionStatistics;
     }
 
 }

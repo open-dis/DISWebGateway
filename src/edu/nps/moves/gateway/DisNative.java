@@ -9,12 +9,12 @@ import java.net.*;
 import java.util.*;
 /**
  * Reads and writes DIS from a native socket on the local network. This 
- * implements the DISEndpoint interface, which allows it to interoperate
- * with the ConnectionManager.
+ implements the DisEndpoint interface, which allows it to interoperate
+ with the ConnectionManager.
  * 
  * @author DMcG
  */
-public class DisNative implements Runnable, DISEndpoint
+public class DisNative implements Runnable, DisEndpoint
 {
     public static final int PORT = 3000;
     
@@ -27,11 +27,8 @@ public class DisNative implements Runnable, DISEndpoint
      */
     private static final int MAX_UDP_PACKET_SIZE = 8 * 1024;
     
-    /** Summary stats for messages sent */
-    IntSummaryStatistics messagesSent;
-    
-    /** Summary stats for messages received */
-    IntSummaryStatistics messagesReceived;
+    /** Traffic statistics */
+    private ConnectionStatistics connectionStatistics;
     
     /** socket can be used for either bcast or multicast */
     private MulticastSocket multicastSocket;
@@ -41,9 +38,6 @@ public class DisNative implements Runnable, DISEndpoint
     
     /** Port socket listens on for DIS traffic */
     private int  port;
-    
-    /** Used for performance instrumentation */
-    private int messageCount = 0;
     
     /** Used for performance instrumentation */
     private Date startTime = new Date();
@@ -70,8 +64,7 @@ public class DisNative implements Runnable, DISEndpoint
         this.multicastSocket = socket;
         this.multicastAddress = multicastAddress;
         this.port = port;
-        this.messagesSent = new IntSummaryStatistics();
-        this.messagesReceived = new IntSummaryStatistics();
+        this.connectionStatistics = new ConnectionStatistics();
     }
     
     /**
@@ -116,14 +109,7 @@ public class DisNative implements Runnable, DISEndpoint
                 
                 Pdu aPdu = pduFactory.createPdu(packet.getData());
               
-                // Can't interepret the packet? It's probably not DIS, or it's not
-                // a supported PDU type, so don't forward it to the web clients.
-                /*
-                if( pduBundleContents == null || pduBundleContents.size() == 0 )
-                {
-                    continue;
-                }
-                */
+                
                 
                 //for(Pdu aPdu : pduBundleContents )
                 //{
@@ -138,20 +124,6 @@ public class DisNative implements Runnable, DISEndpoint
                         //System.out.println("Discarding looped packet, id=" + gatewayID);
                         continue;
                     }
-
-                    /*
-                    messageCount++;
-                    if(messageCount % 10000 == 0)
-                    {
-                        Date endTime = new Date();
-                        long elapsedTime = endTime.getTime() - startTime.getTime();
-                        System.out.println("Elapsed time = " + elapsedTime);
-                        System.out.println("Packets per second received, 10K packets:" + 10000.0 / (elapsedTime / 1000.0));
-                        System.out.println("Entity world count: " + entities.keySet().size());
-                        messageCount = 0;
-                        startTime = endTime;
-                    }
-                    */
 
                     if(aPdu instanceof EntityStatePdu)
                     {
@@ -172,7 +144,8 @@ public class DisNative implements Runnable, DISEndpoint
                     byte trimmedData[] = new byte[packet.getLength()];
                     System.arraycopy(buffer, 0, trimmedData, 0, packet.getLength());
                     connectionManager.enqueueBinaryMessage(trimmedData, this);
-                    messagesReceived.accept(1);
+                    
+                    connectionStatistics.messageReceived(trimmedData);
 
                     // We can also convert this to JSON if we like.
                     //JSONObject obj = new JSONObject(aPdu);
@@ -230,7 +203,7 @@ public class DisNative implements Runnable, DISEndpoint
           {
             DatagramPacket packet = new DatagramPacket(data, data.length, multicastAddress, port);
             multicastSocket.send(packet);
-            messagesSent.accept(1);
+            connectionStatistics.messageSent(data);
           }
           else // send bcast
           {
@@ -241,7 +214,7 @@ public class DisNative implements Runnable, DISEndpoint
                   //System.out.println("Sending to bcast address:" + aBcast);
                   DatagramPacket packet = new DatagramPacket(data, data.length, aBcast, port);
                   multicastSocket.send(packet);
-                  messagesSent.accept(1);
+                  connectionStatistics.messageSent(data);
               }
             
           }
@@ -332,25 +305,17 @@ public class DisNative implements Runnable, DISEndpoint
        return bcastAddresses;   
    }
    
-   /** Get the summary statistics object for this connection
-    *  for the number of  messages (binary and json) sent. IntSummaryStatistics
-    *  is a JDK8 class.
+
+    
+    /**
+    * Returns the connection statistics for this connection. Includes
+    * number of messages sent and potentially other info, such as 
+    * observed latency.
     * 
-    * @return IntSummaryStatistics summary stats for messages sent
+    * @return Object that encapsulates connection stats.
     */
-   public IntSummaryStatistics getMessagesSentSummaryStatistics()
+   public ConnectionStatistics getConnectionStatistics()
    {
-       return messagesSent;
+       return connectionStatistics;
    }
-   
-   /** Get the summary statistics object for this connection
-    *  for the number of binary messages (binary and json) received. 
-    * IntSummaryStatistics is a JDK8 class.
-    * 
-    * @return IntSummaryStatistics summary stats for messages sent
-    */
-    public IntSummaryStatistics getMessagesReceivedSummaryStatistics()
-    {
-        return messagesReceived;
-    }
 }

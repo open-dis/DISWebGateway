@@ -30,7 +30,7 @@ import java.util.IntSummaryStatistics;
  * 
  * @author DMcG
  */
-public class DisRedis implements DISEndpoint
+public class DisRedis implements DisEndpoint
 {
     // Should be moved to properties file
     
@@ -69,11 +69,8 @@ public class DisRedis implements DISEndpoint
     /** Connection to redis server for subscribed message receipt */
     private  static Jedis subscribeJedisBinaryConnection = null;
     
-    /** Summary stats for messages sent */
-    IntSummaryStatistics messagesSent;
-    
-    /** Summary stats for messages received */
-    IntSummaryStatistics messagesReceived;
+    /** Data traffic statistics */
+    private ConnectionStatistics connectionStatistics;
     
     /** Unique, randomly-generated ID for this websocket server in 
      * the pool. 
@@ -103,12 +100,11 @@ public class DisRedis implements DISEndpoint
     { 
         try  
         {
-            this.messagesSent = new IntSummaryStatistics();
-            this.messagesReceived = new IntSummaryStatistics();
             
             websocketServerID = (int)(Math.random() * Integer.MAX_VALUE);
             JedisPoolConfig cfg = new JedisPoolConfig();
             cfg.setMaxTotal(5);
+            connectionStatistics = new ConnectionStatistics();
             
             // REDIS_SERVER and REDIS_PORT should be moved to a config file
             pool = new JedisPool(cfg, Configuration.REDIS_SERVER, Configuration.REDIS_PORT);
@@ -230,7 +226,7 @@ public class DisRedis implements DISEndpoint
         
         // Publish it.
         DisRedis.publishJedisBinaryConnection.publish(DisRedis.REDIS_PUBSUB_CHANNEL.getBytes(), full);
-        messagesSent.accept(1);
+        connectionStatistics.messageSent(full);
      }
      catch(Exception e)
      {
@@ -247,30 +243,18 @@ public class DisRedis implements DISEndpoint
    {
        //System.out.println("Forwarding DIS message to Redis server");
        DisRedis.publishJedisBinaryConnection.publish(REDIS_PUBSUB_CHANNEL, "WockaWockaWocka");
-       messagesSent.accept(1);
+       connectionStatistics.messageSent(aMessage.getBytes());
    }
    
-     /** Get the summary statistics object for this connection
-    *  for the number of  messages (binary and json) sent. IntSummaryStatistics
-    *  is a JDK8 class.
-    * 
-    * @return IntSummaryStatistics summary stats for messages sent
+
+   /**
+    * Returns the connection statistics for this connection
+    * @return 
     */
-   public IntSummaryStatistics getMessagesSentSummaryStatistics()
+   public ConnectionStatistics getConnectionStatistics()
    {
-       return messagesSent;
+       return this.connectionStatistics;
    }
-   
-   /** Get the summary statistics object for this connection
-    *  for the number of binary messages (binary and json) received. 
-    * IntSummaryStatistics is a JDK8 class.
-    * 
-    * @return IntSummaryStatistics summary stats for messages sent
-    */
-    public IntSummaryStatistics getMessagesReceivedSummaryStatistics()
-    {
-        return messagesReceived;
-    }
    
    
 }

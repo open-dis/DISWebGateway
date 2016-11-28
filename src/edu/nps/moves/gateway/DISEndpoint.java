@@ -9,7 +9,7 @@ import java.util.IntSummaryStatistics;
  * 
  * @author DMcG
  */
-public interface DISEndpoint 
+public interface DisEndpoint 
 {
     /** Send binary format DIS to an endpoint. 
      * @param buf binary format message, typcially iee1278.1 DIS
@@ -21,20 +21,13 @@ public interface DISEndpoint
     */
    public void sendToClient(String aMessage);
    
-   /** Get the summary statistics object for this connection
-    *  for the number of  messages (binary and json) sent. IntSummaryStatistics
-    *  is a JDK8 class.
+   /**
+    * Returns the connection statistics for this connection. Includes
+    * number of messages sent and potentially other info, such as 
+    * observed latency.
     * 
-    * @return IntSummaryStatistics summary stats for messages sent
+    * @return Object that encapsulates connection stats.
     */
-   public IntSummaryStatistics getMessagesSentSummaryStatistics();
-   
-   /** Get the summary statistics object for this connection
-    *  for the number of binary messages (binary and json) received. 
-    * IntSummaryStatistics is a JDK8 class.
-    * 
-    * @return IntSummaryStatistics summary stats for messages sent
-    */
-    public IntSummaryStatistics getMessagesReceivedSummaryStatistics();
+   public ConnectionStatistics getConnectionStatistics();
 
 }

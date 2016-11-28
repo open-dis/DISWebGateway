@@ -42,7 +42,7 @@ public class ConnectionManager implements Runnable
     /** Every connection established by a web page is kept in this list. This should
      * be a concurrentHashSet, but there doesn't seem to be one out of the box.
      */
-    public  ConcurrentMap<DISEndpoint, DISEndpoint> connections;
+    public  ConcurrentMap<DisEndpoint, DisEndpoint> connections;
     
     /** Thread responsible for repeating an incoming binary message out to all clients */
     public static Thread distributionThread;
@@ -92,7 +92,7 @@ public class ConnectionManager implements Runnable
      * 
      * @param aConnection  connection to client
      */
-    public synchronized void addConnection(DISEndpoint aConnection)
+    public synchronized void addConnection(DisEndpoint aConnection)
     {
             connections.put(aConnection, aConnection);
     }
@@ -104,7 +104,7 @@ public class ConnectionManager implements Runnable
      * 
      * @param aConnection Connection to client
      */
-    public synchronized void removeConnection(DISEndpoint aConnection)
+    public synchronized void removeConnection(DisEndpoint aConnection)
     {
           connections.remove(aConnection);
     }
@@ -118,7 +118,7 @@ public class ConnectionManager implements Runnable
      * @param sender the client that sent the message. The message is not sent to this client. If the
      * sender is null, the message is sent to all connected clients.
      */
-    public void repeatMessage(String message, DISEndpoint sender)
+    public void repeatMessage(String message, DisEndpoint sender)
     {
             try
             {
@@ -130,11 +130,11 @@ public class ConnectionManager implements Runnable
                 
                 // Loop through all the connections, repeating the message out
                 // (except to the connection that sent it). Note that the 
-                // DISEndpoint may actually be a native network DIS connection.
+                // DisEndpoint may actually be a native network DIS connection.
                 Iterator it = connections.keySet().iterator();
                 while(it.hasNext())
                 {
-                   DISEndpoint aConnection = (DISEndpoint)it.next();
+                   DisEndpoint aConnection = (DisEndpoint)it.next();
 
                     // Repeat the message to all clients, except the client that sent it.
                     // If the sender is null, always send it to all of the connections
@@ -161,7 +161,7 @@ public class ConnectionManager implements Runnable
      * @param data message received from sender
      * @param sender the client that sent the message. The message is not sent to this client.
      */
-    public void repeatBinaryMessage(byte[] data, DISEndpoint sender)
+    public void repeatBinaryMessage(byte[] data, DisEndpoint sender)
     {
         //System.out.println("Repeating DIS pdu to connections");
         try
@@ -172,7 +172,7 @@ public class ConnectionManager implements Runnable
             Iterator it = connections.keySet().iterator();
             while(it.hasNext())
             {
-               DISEndpoint aConnection = (DISEndpoint)it.next();
+               DisEndpoint aConnection = (DisEndpoint)it.next();
                //System.out.println("checking for repeat out connection " + aConnection);
 
                 // Repeat the message to all clients, except the client that sent it.
@@ -216,7 +216,7 @@ public class ConnectionManager implements Runnable
      * @param data binary data to send
      * @param sender connection to the client
      */
-    public void enqueueBinaryMessage(byte[] data, DISEndpoint sender)
+    public void enqueueBinaryMessage(byte[] data, DisEndpoint sender)
     {
         // Dumb class to make data and reciever one object
         BinaryMessageAndSender msg = new BinaryMessageAndSender(data, sender);
@@ -282,9 +282,9 @@ public class ConnectionManager implements Runnable
     public class BinaryMessageAndSender
     {
         public byte[] data;
-        public DISEndpoint sender;
+        public DisEndpoint sender;
         
-        public BinaryMessageAndSender(byte[] data, DISEndpoint sender)
+        public BinaryMessageAndSender(byte[] data, DisEndpoint sender)
         {
             this.data = data;
             this.sender = sender;
