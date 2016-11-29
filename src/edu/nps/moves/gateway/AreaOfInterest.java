@@ -75,9 +75,10 @@ public class AreaOfInterest
   }
   
   /**
-   * Send a raw PDU to be processed by the javascript code. Returns either
-   * true or false, if true the PDU should be sent to the client. If there
-   * is no javascript, a null AOIM, always pass all PDUs.
+   * Send a raw PDU to be processed by the javascript code. 
+   * The javascript code returns an object, and the caller
+   * should know what that object is by context, and cast it
+   * to what it expects. What could go wrong
    * 
    * @param pduData PDU data, in binary form
    * @return true of the PDU should be sent to the client

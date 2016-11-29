@@ -23,6 +23,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 import org.json.*;
 import java.nio.*;
+import java.util.*;
 
 import edu.nps.moves.disutil.*;
 import edu.nps.moves.dis.*;
@@ -49,7 +50,7 @@ public class WebPageConnection implements DisEndpoint
      * criteria; it simply runs a Javacript program and provides a yes-or-no
      * answer about whether the server should forward it to the client.
      */
-    AreaOfInterest aoim = null;
+    JavascriptFilter aoim = null;
     
     /** The connection manager holds all the connections */
     ConnectionManager connectionManager = ConnectionManager.getConnectionManager();
@@ -87,9 +88,21 @@ public class WebPageConnection implements DisEndpoint
                     + "  return true;\n"
                     + "};\n";
         
-        System.out.println("Script is: " + script);
-        this.aoim = new AreaOfInterest(script);
+        //System.out.println("Script is: " + script);
+        this.aoim = new JavascriptFilter(script, "aoim");
         
+        EntityStatePdu espdu = new EntityStatePdu();
+        byte[] data = espdu.marshal();
+        Date start = new Date();
+        for(int idx = 0; idx < 100000; idx++)
+        {
+            aoim.passPdu(data);
+        }
+        /*
+        Date finish = new Date();
+        long duration = finish.getTime() - start.getTime();
+        System.out.println("Time to filter 100000 pdus: " + duration);
+        */
         ConnectionManager.getConnectionManager().addConnection(this);
     }
 
@@ -169,17 +182,15 @@ public class WebPageConnection implements DisEndpoint
     public void sendBinaryToClient(byte[] buf)
     {
         // Check if this PDU passes the critera of AOIM for this
-        // connnection
+        // connnection. If not, drop it.
         if(aoim != null && Configuration.ENABLE_AOIM)
-        {
-            //System.out.println("Performing AOIM test");
-            if( !(aoim.pduPassesAOIM(buf)))
+        {            
+            if( !aoim.passPdu(buf) )
             {
-                //System.out.println("Failed AOIM test");
-                return;
+               return; // Drop without sending
             }
                //System.out.println("Passed AOIM test");
-        }
+        } // End of AOIM section
         
         try
         {
