@@ -90,18 +90,12 @@ public class AreaOfInterest
       
       try
       {
-          // some problem finding the method.
-          /*
-          String encodedData = org.apache.commons.codec.binary.Base64.encodeBase64String(pduData);
-          
-         //System.out.println("invoking aoim for " + encodedData);
-        Object result = invocableJavascriptFunction.invokeFunction("aoim", encodedData);
+        Object result = invocableJavascriptFunction.invokeFunction("aoim", pduData);
         
-        //System.out.println("result of AOIM is " + result);
+        System.out.println("result of AOIM is " + result);
         
         if(result instanceof Boolean )
             return (Boolean)result;
-                  */
       }
       catch(Exception e)
       {

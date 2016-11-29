@@ -79,7 +79,7 @@ public class WebPageConnection implements DisEndpoint
                     + "var pduFactory = new dis.PduFactory();\n" 
                     + "function aoim(data) \n" 
                     +  "{  \n"
-                    +  "  var pduBuffer = base64._base64ToArrayBuffer(data);\n"
+                    +  "  var pduBuffer = byteToUint8Array(data);\n"
                     + "   var pdu = pduFactory.createPdu(pduBuffer);\n "
                     + "   if(pdu.pduType !== 1) \n"
                     + "      return false;\n"
@@ -87,7 +87,7 @@ public class WebPageConnection implements DisEndpoint
                     + "  return true;\n"
                     + "};\n";
         
-        //System.out.println("Script is: " + script);
+        System.out.println("Script is: " + script);
         this.aoim = new AreaOfInterest(script);
         
         ConnectionManager.getConnectionManager().addConnection(this);

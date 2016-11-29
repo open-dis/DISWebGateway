@@ -110,10 +110,17 @@
    function detonation()
    {
        var detonationPdu = new dis.DetonationPdu();
+       console.log(detonationPdu);
        
        var ammoSelect = document.getElementById("ammo");
        var ammo = ammoSelect.options[ammoSelect.selectedIndex].value;
        console.log("Ammo type: ", ammo);
+       
+       var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
+       var outputStream = new dis.OutputStream(dataBuffer);
+       detonationPdu.encodeToBinary(outputStream);
+       var binaryData = outputStream.toByteArray();
+       websocket.send(binaryData);
        
       
    }

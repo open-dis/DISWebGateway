@@ -72,6 +72,7 @@
             
             var rifleMunition = new dis.EntityType();
             var damageHits = 0;
+            var direction = 1;
             
             
             espdu.entityID.entity = Math.round(Math.random() * 64000);
@@ -147,7 +148,7 @@
              * @returns {undefined}
              */
             function sendPdu()
-            {
+            {              
                 var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
                 var outputStream = new dis.OutputStream(dataBuffer);
                 espdu.encodeToBinary(outputStream);
@@ -253,6 +254,14 @@
             console.log("You sent a PDU that is not a detonation pdu to detonationPduHandler");
             return;
         }
+        
+        var bangLocation = detonationPdu.locationInWorldCoordinates;
+        var targetID = detonationPdu.targetEntityID;
+        var burst = detonationPdu.burstDescriptor;
+        var munition = burst.munition;
+        
+        // do damage tables here
+        // compare our location to detonation location
         
         // Handle the detonation PDU here
         
