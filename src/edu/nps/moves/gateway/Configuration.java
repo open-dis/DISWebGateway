@@ -84,10 +84,6 @@ public class Configuration
 
         try
         {
-            // Default the values, then read ENV Vars to override
-            // HTTP_WEBSERVER_PORT = Integer.parseInt(settings.getProperty("webserverPort"));
-            // HTTPS_WEBSERVER_PORT = Integer.parseInt(settings.getProperty("httpsWebserverPort"));
-            
             String webserverPort = settings.getProperty("webserverPort");
             String httpsWebserverPort= settings.getProperty("httpsWebserverPort");
             
