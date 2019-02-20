@@ -25,25 +25,25 @@
             <form id="EspduForm" action="form_action.asp">
                 <b>Entity Type Information; Russian T-72 by Default</b><br>
                   Kind: <input type="text" name="entitykind" id="entitykind" value="1"><br>
-                  Domain: <input type="text" name="domain" id="domain" value="1"><br>
+                  Domain: <input type="text" name="domain" id="domain" value="2"><br>
                   Country <input type="text" name="country" id="country" value="222"><br>
                   Category<input type="text" name="category" id="category" value="1"><br>
-                  Subcategory<input type="text" name="subcategory" id="subcategory" value="2"><br>
+                  Subcategory<input type="text" name="subcategory" id="subcategory" value="3"><br>
                   Specific<input type="text" name="specific" id="specific" value="1"><br>
-                  Extra<input type="text" name="extra" id="extra" value="1"><br><br>
+                  Extra<input type="text" name="extra" id="extra" value="0"><br><br>
                   
                   <b>Entity ID site and application</b><br>
                   Site<input type="text" name="site" id="site" value="48"><br>
-                  Application<input type="text" name="application" id="application" value="23"><br>
+                  Application<input type="text" name="application" id="application" value="10"><br>
                   <br>
                   <b>Location</b></br>
-                  Latitude (Decimal degrees):<input type="text" name="latitude" id="latitude" value="36.595"><br>
-                  Longitude<input type="text" name="longitude" id="longitude" value="-121.9"><br>
-                  Altitude (meters)<input type="text" name="altitude" id="altitude" value="10"><br>
+                  Latitude (Decimal degrees):<input type="text" name="latitude" id="latitude" value="37.434222"><br>
+                  Longitude<input type="text" name="longitude" id="longitude" value="-116.788874"><br>
+                  Altitude (meters)<input type="text" name="altitude" id="altitude" value="15000"><br>
                   
                   <br>
                   <b>Marking</b>
-                  Marking<input type="text" name="marking" id="marking" value="MyEntity"><br>
+                  Marking<input type="text" name="marking" id="marking" value="Su-27"><br>
                   <br>
                   
                   <br>
@@ -110,6 +110,7 @@
                 espdu.entityID.site = parseInt(document.getElementById("site").value);
                 espdu.entityID.application = parseInt(document.getElementById("application").value);
                 espdu.entityID.entity = Math.round(Math.random() * 65000);
+                espdu.forceId = 1;
                 
                 // Marking
                 var convert =  new dis.StringConversion();

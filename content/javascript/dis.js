@@ -500,6 +500,12 @@ if (typeof exports === "undefined")
                 newPdu.initFromBinary(inputStream);
                 break;
 
+            case 23:    // data
+                newPdu = new dis.ElectronicEmissionsPdu();
+                console.log("............EE PDU created.........");
+                newPdu.initFromBinary(inputStream);
+                break;
+
             default:
                throw  "PduType: " + pduType + " Unrecognized PDUType. Add PDU in dis.PduFactory.";
         }

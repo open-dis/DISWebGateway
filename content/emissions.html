@@ -1,0 +1,271 @@
+
+<html>
+    <head>
+        <title>Constructive Electromagnetic Emissions</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script type="text/javascript" src="javascript/dis.js"></script>
+    </head>
+    <body onLoad="initialize()">
+        <div id="data">
+            
+            <form id="EepduForm" action="form_action.asp">
+                <b>ElectronicEmissionsPdu</b><br>
+                  <b>Emitting Entity ID site and application</b><br>
+                  Site<input type="text" name="site" id="site" value="5"><br>
+                  Application<input type="text" name="application" id="application" value="5"><br>
+                  Entity<input type="text" name="entityID" id="entityID" value="1"><br>
+                  <br>
+                  <b>EventID</b></br>
+                  Site<input type="text" name="evsite" id="evSite" value="5"><br>
+                  Application<input type="text" name="evapplication" id="evApplication" value="5"><br>
+                  Entity<input type="text" name="evEventID" id="evEventID" value="1"><br>
+                  <br>
+                  <b>Number Of Systems</b></br>
+                  No. Systems<input type="text" name="numSys" id="numSys" value="1"><br>
+                  <br>
+                  
+                  <br>
+                  <b>Systems</b></br>
+                  No. Systems<input type="text" name="numSys" id="numSys" value="1"><br>
+                  <b>Emitter Sytem</b></br>
+                  Name<input type="text" id="esName" value="10"><br>
+                  Function<input type="text" id="esFunction" value="4"><br>
+                  ID Number<input type="text" id="esNum" value="79"><br>
+                
+                  <br>
+                  <b>Location wrt/Entity </b></br>
+                  Latitude (Decimal degrees):<input type="text" name="latitude" id="latitude" value="36.595"><br>
+                  Longitude<input type="text" name="longitude" id="longitude" value="-121.9"><br>
+                  Altitude (meters)<input type="text" name="altitude" id="altitude" value="10"><br>
+                  
+                  <br>
+                  <b>Beam Data Record(s)</b></br>
+                  ID Number<input type="text" id="b1Id" value="22"><br>
+                  BeamParameterIndex<input type="text" id="b1Bpi" value="22"><br>
+                  <br>
+                  <b>Fundamental Parameter Data[0]</b></br>
+                  Frequency<input type="text" id="fp1Freq" value="22"><br>
+                  Frequency Range<input type="text" id="fp1FreqRange" value="22"><br>
+                  EffectiveRadiatedPower<input type="text" id="fp1Erp" value="22"><br>
+                  PulseRepetitionFrequency<input type="text" id="fp1Prf" value="22"><br>
+                  PulseWidth<input type="text" id="fp1PWidth" value="22"><br>
+                  beamAzimuthCenter<input type="text" id="fp1Bac" value="22"><br>
+                  beamAzimuthSweep<input type="text" id="fp1Bas" value="22"><br>
+                  beamElevationCenter<input type="text" id="fp1Bec" value="22"><br>
+                  beamElevationSweep<input type="text" id="fp1Bes" value="22"><br>
+                  beamSweepSync<input type="text" id="fp1SweepSync" value="22"><br>
+                  
+                  <b>Send Frequency </b><br>
+                  Send Frequency (ms)<input type="text" name="sendfrequency" id="sendfrequency" value="5000"><br>
+                          
+            <input type="button" name="submit" value="Start Sending PDUs" onClick="constructiveSend(this.form)" >
+</form>
+        </div>
+        
+       
+        
+        <SCRIPT type="text/javascript">
+            /** This works if you're running client and server on one host. To 
+             * have it work with a remote server, replace localhost with the IP
+             * or name of the server.
+             */
+            var WEBSOCKET_URL="ws://localhost:8282";
+            var websocket;
+            var timerID = 0;
+            /** A likely map location */
+            var montereyLocation = {'latitude':36.595, 'longitude':-121.877};
+            var pduFactory = new dis.PduFactory();
+            var eePdu = new dis.ElectronicEmissionsPdu();
+            
+            /**
+             * Called when the user clicks the "submit" button. Starts a task
+             * to retrieve the field values, and periodically send eePdus based
+             * on this.
+             * 
+             * @param {type} form
+             * @returns {undefined}
+             */
+            function constructiveSend(form)
+            {                
+                // On a second button press, kill the old send timer and
+                // start a new one farther down, so we don't have two
+                // timers sending
+                if(timerID != 0)
+                {
+                    console.log("timerID:", timerID)
+                    clearInterval(timerID);
+                    console.log("Killed old periodic send task")
+                }
+                
+                // Fill out entity ID 
+                eePdu.emittingEntityID.site = parseInt(document.getElementById("site").value);
+                eePdu.emittingEntityID.application = parseInt(document.getElementById("application").value);
+                eePdu.emittingEntityID.entity = parseInt(document.getElementById("entityID").value);
+                
+                // EventID
+                eePdu.eventID.site = parseInt(document.getElementById("evSite").value);
+                eePdu.eventID.application = parseInt(document.getElementById("evApplication").value);
+                eePdu.eventID.eventNumber = parseInt(document.getElementById("evEventID").value);
+                
+                // Number of Systems (hardcoded to 1 for now)
+                eePdu.numberOfSystems = 1;
+                
+                // Systems (hardcoded to 1 for now)
+                eePdu.systems[0].numberOfBeams = 1;
+                eePdu.systems[0].emitterSystem.emitterName = parseInt(document.getElementById("esName").value);
+                // Function of emitters: 
+                //   Ownship / Air entity radar:4 = Fire Control Radar (Tracking)
+                //   Ownship missile radar:61 = Missile Homing
+                //   Surface entity:
+                //      4 = Fire Control
+                //      5 = Acquisition/Detection
+                eePdu.systems[0].emitterSystem.function = parseInt(document.getElementById("esFunction").value);
+                eePdu.systems[0].emitterSystem.emitterIdNumber = parseInt(document.getElementById("esNum").value);
+                  
+                // Convert lat/lon/alt to DIS coordinates
+                var lat = parseFloat(document.getElementById("latitude").value);
+                var lon = parseFloat(document.getElementById("longitude").value);
+                var alt = parseFloat(document.getElementById("altitude").value);
+                var conversion = new dis.CoordinateConversion();
+                latLonAlt = {};
+                latLonAlt.lat = lat;
+                latLonAlt.lon = lon;
+                latLonAlt.alt = alt;
+                var disCoordinates = conversion.getXYZfromLatLonAltDegrees(latLonAlt);
+                
+                // Position
+                eePdu.systems[0].location.x = disCoordinates.x;
+                eePdu.systems[0].location.y = disCoordinates.y;
+                eePdu.systems[0].location.z = disCoordinates.z;
+                
+                // Beam Data records (just one for now)
+                eePdu.systems[0].beamDataRecords[0].beamIDNumber = 1;
+                eePdu.systems[0].beamDataRecords[0].beamParameterIndex = 2;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.frequency = 2.0;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.frequencyRange = 2.0;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.effectiveRadiatedPower = 12.0;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.pulseRepetitionFrequency = 2.0;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.pulseWidth = 2.0;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.beamAzimuthCenter = 2.0;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.beamAzimuthSweep = 2.0;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.beamElevationCenter = 2.0;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.beamElevationSweep = 2.0;
+                eePdu.systems[0].beamDataRecords[0].fundamentalParameterData.beamSweepSync = 2.0;
+                
+                /// Beam FUnctions 1 = Search, 4 = Tracking, 6 = Command guidance, 7 = Illumination, 12 = jammer
+                eePdu.systems[0].beamDataRecords[0].beamFunction = 4; // Tracking
+                eePdu.systems[0].beamDataRecords[0].numberOfTrackJamTargets = 1;
+                eePdu.systems[0].beamDataRecords[0].highDensityTrackJam = 0;
+                eePdu.systems[0].beamDataRecords[0].jammingModeSequence = 0;
+                eePdu.systems[0].beamDataRecords[0].trackJamTargets[0].trackJam.site = 41;
+                eePdu.systems[0].beamDataRecords[0].trackJamTargets[0].trackJam.application = 42;
+                eePdu.systems[0].beamDataRecords[0].trackJamTargets[0].trackJam.entity = 43;
+                eePdu.systems[0].beamDataRecords[0].trackJamTargets[0].emitterID = 0; // not used
+                eePdu.systems[0].beamDataRecords[0].trackJamTargets[0].beamID = 0; // not used
+
+                // How often to send
+                var frequency = parseInt(document.getElementById("sendfrequency").value);
+                                          
+                // start a repeating task to send it
+                timerID = setInterval(sendPdu, frequency);
+            }
+            
+            /**
+             * Called by the timer task. Marshal and send a PDU
+             * 
+             * @returns {undefined}
+             */
+            function sendPdu()
+            {              
+                var dataBuffer = new ArrayBuffer(1000); // typically 144 bytes, make it bigger for safety
+                var outputStream = new dis.OutputStream(dataBuffer);
+                eePdu.encodeToBinary(outputStream);
+                
+                var trimmedData = outputStream.toByteArray();
+                websocket.send(trimmedData);
+                console.log("Sent pdu ", eePdu);
+                
+            }
+            
+            /**
+             * Initialize websocket
+             * 
+             * @returns {undefined}
+             */
+            function initialize()
+            {
+                
+                websocket = new WebSocket(WEBSOCKET_URL);
+
+                // Set the format we want to use to receive binary messages
+                 websocket.binaryType = 'arraybuffer';
+
+                 // Attach functions to the the web socket for various events
+                 websocket.onopen = function(evt){console.log("Opened websocket");};//console.log("websocket onopen");};
+                 websocket.onclose = function(evt){console.log("websocket close", evt);};
+                 websocket.onerror = function(evt){console.log("websocket error", evt.data);};
+
+                 // We don't really need to receive anything, just blindly send
+                 websocket.onmessage = function(evt)
+                 { 
+                     var aPdu = pduFactory.createPdu(evt.data);
+                     //console.log("PDU:", aPdu);
+                     switch(aPdu.pduType)
+                     {
+                        case 1: 
+                           // console.log("Entity State PDU:", aPdu);
+                           entityStatePduHandler(aPdu);
+                           break;
+                            
+                        case 23:
+                           console.log("EE PDU:", aPdu);
+                           emissionsPduHandler(aPdu);
+                           break;
+
+                        default:
+                            break;
+                     }
+                    
+                 }
+                
+            }
+     
+     /**
+      * Call this function to process an entity state pdu
+      * 
+      * @param {EntityStatePdu} eePdu
+      * @returns {void}
+      */
+    function entityStatePduHandler(eePdu)
+    {
+        if(eePdu.pduType != 1)
+        {
+            console.log("Sent a non-eePdu PDU to entityStatePduHandler");
+            return;
+        }
+        
+        // Process an entity state PDU here
+    }
+    
+    
+    /** 
+     * Call this function to process a emissionsPdu
+     * 
+     * @param {ElectronicEmissionsPdu} emissionsPdu
+     * @returns {void}
+     */
+    function emissionsPduHandler(emissionsPdu)
+    {
+       if(emissionsPdu.pduType != 23)
+       {
+           console.log("You sent a PDU that is not a fire PDU to emissionsPduHandler");
+           return;
+       }
+       
+       // Process PDU here
+       console.log("EE PDU: " + JSON.stringify(emissionsPdu);
+    }
+      </script>
+   </body>
+</html>
